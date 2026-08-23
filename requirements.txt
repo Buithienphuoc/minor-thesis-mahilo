@@ -1,0 +1,24 @@
+fastapi>=0.115.6
+openai>=1.59.8
+litellm>=1.30.0
+python-dotenv==1.0.1
+uvicorn==0.30.6
+websockets==13.0.1
+click==8.1.7
+rich==13.9.3
+langgraph==0.2.60
+pydantic-ai
+PyJWT==2.8.0
+langchain-openai
+
+# OpenTelemetry
+opentelemetry-api==1.32.1
+opentelemetry-sdk==1.32.1
+opentelemetry-instrumentation>=0.53b1
+opentelemetry-semantic-conventions>=0.53b1
+
+# Optional exporters (uncomment the ones you want to use)
+# opentelemetry-exporter-otlp>=1.21.0  # OTLP exporter
+# opentelemetry-exporter-prometheus>=1.21.0  # Prometheus exporter
+# opentelemetry-exporter-jaeger>=1.21.0  # Jaeger exporter
+mahilo
