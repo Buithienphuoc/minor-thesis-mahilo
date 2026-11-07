@@ -14,7 +14,9 @@ from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits
 
-from . import history
+from pydantic import BaseModel
+
+from . import history, profiles
 from .contract import ToolCallRecord, TurnRequest, TurnResponse, WireTool
 
 
@@ -37,10 +39,12 @@ def _make_tool(spec: WireTool, caller: ToolCaller) -> Tool:
 
 async def run_turn(req: TurnRequest, model: Model | str, caller: ToolCaller) -> TurnResponse:
     split = history.split(req.messages)
+    profile = profiles.for_agent(req.agent.name)
     agent = Agent(
         model,
-        instructions=split.instructions,
+        instructions=split.instructions + "\n" + profile.extra_instructions,
         tools=[_make_tool(t, caller) for t in req.tools],
+        output_type=profile.output_type,
         name=req.agent.name,
     )
     try:
@@ -52,8 +56,20 @@ async def run_turn(req: TurnRequest, model: Model | str, caller: ToolCaller) -> 
     except UsageLimitExceeded:
         return TurnResponse(reply="(Đã dừng: quá số vòng gọi model cho phép)", stopped_early=True)
 
-    return TurnResponse(reply=str(result.output) if result.output is not None else None,
-                        tool_calls=_tool_trace(result.new_messages()))
+    return TurnResponse(
+        reply=_render(result.output),
+        # Chỉ ghi lại tool của Mahilo; tool nội bộ của PydanticAI (vd "final_result" cho
+        # output có cấu trúc) không phải việc của Mahilo.
+        tool_calls=[t for t in _tool_trace(result.new_messages()) if t.name in {x.name for x in req.tools}],
+    )
+
+
+def _render(output: Any) -> str | None:
+    if output is None:
+        return None
+    if isinstance(output, BaseModel):
+        return output.model_dump_json()
+    return str(output)
 
 
 def _tool_trace(messages) -> list[ToolCallRecord]:

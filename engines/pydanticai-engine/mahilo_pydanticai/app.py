@@ -17,16 +17,16 @@ from .engine import run_turn
 from .mahilo_client import HttpToolCaller
 
 
-def _model():
+def _model_for(agent_name: str):
+    """``demo`` = model giả lập theo vai agent; còn lại là tên model PydanticAI, vd ``openai:gpt-4o-mini``."""
     name = os.getenv("PYDANTICAI_MODEL", "demo")
-    return demo_model() if name == "demo" else name
+    return demo_model(agent_name) if name == "demo" else name
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with httpx.AsyncClient() as client:
         app.state.http = client
-        app.state.model = _model()
         yield
 
 
@@ -41,4 +41,4 @@ async def health() -> dict:
 @app.post("/v1/turns", response_model=TurnResponse)
 async def turns(req: TurnRequest) -> TurnResponse:
     caller = HttpToolCaller(req.callback.url, app.state.http)
-    return await run_turn(req, app.state.model, caller)
+    return await run_turn(req, _model_for(req.agent.name), caller)

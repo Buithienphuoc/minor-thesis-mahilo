@@ -25,6 +25,10 @@ object DemoBrain:
       case i  => turnText.substring(i + "User: ".length)
 
   def reply(req: LlmRequest): IO[LlmReply] =
+    // Agent của ví dụ team_of_agents thì giao cho TeamBrain.
+    if TeamBrain.handles(agentName(req)) then TeamBrain.reply(req) else dispatcherScenario(req)
+
+  private def dispatcherScenario(req: LlmRequest): IO[LlmReply] =
     val turn       = lastUserText(req)
     val fromQueue  = turn.startsWith(Pending)
     val afterTool  = last(req).exists(_.isInstanceOf[ChatMessage.Tool])
