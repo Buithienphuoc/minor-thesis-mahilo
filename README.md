@@ -34,21 +34,22 @@ Biến môi trường (xem `ServerMain.scala`): `MAHILO_LLM` = `openai` | `langc
 
 ## Kiến trúc
 
-```
-                ┌──────────────────────── bootstrap (composition root) ────────────────────────┐
-                │  ServerMain / DemoMain: chọn adapter nào cắm vào port nào                      │
-                └───────────────────────────────────────────────────────────────────────────────┘
-  ADAPTER VÀO (driving)                    LÕI                                 ADAPTER RA (driven)
- ┌──────────────────┐   port vào   ┌──────────────────────────────┐  port ra   ┌────────────────────────────┐
- │ adapter-http     │ ───────────► │ application                  │ ─────────► │ adapter-llm-openai         │ LlmClient
- │  REST + WebSocket│ ChatUseCase  │  AgentRuntime, ToolLoopEngine│ LlmClient  │ adapter-langchain4j        │ LlmClient, AgentEngine
- │ test, DemoMain   │ InboxUseCase │  MessageBroker, PolicyEngine │ AgentEngine│ adapter-persistence-sqlite │ MessageStore, SessionRepository
- └──────────────────┘ AdminUseCase │  DeliveryWorker              │ MessageStore adapter-local             │ in-memory, LLM giả lập, HMAC
-                      Observation  │ ┌──────────────────────────┐ │ SessionRepo│ adapter-http               │ HumanGateway (WebSocket)
-                      Query        │ │ domain (thuần, không IO) │ │ HumanGateway                            │
-                                   │ └──────────────────────────┘ │ Telemetry  └────────────────────────────┘
-                                   └──────────────────────────────┘ EnvelopeSigner
-```
+![Sơ đồ Hexagonal Architecture của mahilo-scala](docs/hexagonal-architecture.svg)
+
+Cách đọc sơ đồ (mũi tên là chiều gọi):
+
+- **Lõi (lục giác)** gồm `domain` (thuần Scala, không IO, không thư viện) và `application` (các service như `AgentRuntime`,
+  `ToolLoopEngine`, `MessageBroker`, `PolicyEngine`, `DeliveryWorker`). Lõi chỉ nói chuyện với bên ngoài qua các trait trong
+  `application/port`.
+- **Port vào (bên trái, `port/in`)**: `ChatUseCase`, `InboxUseCase`, `AdminUseCase`, `ObservationQuery`. `adapter-http`
+  (REST + WebSocket), `DemoMain` và test gọi vào lõi qua các port này; `DeliveryWorker` gọi `InboxUseCase` khi có tin mới.
+- **Port ra (bên phải, `port/out`)**: mỗi port có thể có nhiều adapter. Ví dụ `LlmClient` có OpenAI, LangChain4j và bản giả
+  lập; `AgentEngine` có vòng lặp gốc `ToolLoopEngine`, `LangGraph4jEngine` và `RemoteAgentEngine` (gọi service Python
+  PydanticAI, service này gọi ngược tool qua `RemoteEngineRoutes`).
+- **`bootstrap`** là composition root, nơi duy nhất biết mọi adapter. Đổi SQLite sang in-memory, hay OpenAI sang
+  LangChain4j, chỉ là đổi biến môi trường đọc trong `ServerMain`.
+
+Sơ đồ (file SVG) được vẽ theo code hiện tại; nếu thêm port hay adapter mới thì nhớ cập nhật `docs/hexagonal-architecture.svg`.
 
 Quy tắc phụ thuộc, được sbt kiểm tra (module không khai báo `dependsOn` thì không import được):
 
