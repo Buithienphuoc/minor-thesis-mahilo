@@ -1,0 +1,22 @@
+[project]
+name = "mahilo-pydanticai-engine"
+version = "0.1.0"
+description = "Engine PydanticAI cho Mahilo-Scala, giao tiếp qua REST (xem docs/remote-engine-contract.md)"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic-ai-slim==2.57.0",
+    "fastapi==0.156.3",
+    "uvicorn==0.54.0",
+    "httpx>=0.28,<1",
+]
+
+[project.optional-dependencies]
+openai = ["pydantic-ai-slim[openai]==2.57.0"]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["mahilo_pydanticai"]
