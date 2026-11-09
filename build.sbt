@@ -34,7 +34,7 @@ lazy val testDeps = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(domain, application, adapterLocal, adapterLlmOpenAi, adapterSqlite, adapterHttp, adapterLangChain4j, adapterRemoteEngine, bootstrap)
+  .aggregate(domain, application, adapterLocal, adapterLlmOpenAi, adapterSqlite, adapterHttp, adapterLangChain4j, adapterRemoteEngine, bootstrap, cli)
   .settings(name := "mahilo-scala", publish / skip := true)
 
 // ---------- Lõi: domain thuần ----------
@@ -134,4 +134,17 @@ lazy val bootstrap = (project in file("modules/bootstrap"))
     run / connectInput := true,
     run / javaOptions ++= Seq("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"),
     Compile / mainClass := Some("mahilo.bootstrap.DemoMain")
+  )
+
+// ---------- Client dòng lệnh (giống `mahilo connect`) ----------
+// Chương trình riêng, không phụ thuộc lõi: chỉ nói chuyện qua WebSocket /ws/{agent}.
+lazy val cli = (project in file("modules/cli"))
+  .settings(
+    name := "mahilo-cli",
+    libraryDependencies ++= testDeps,
+    run / fork := true,
+    run / connectInput := true,
+    run / outputStrategy := Some(StdoutOutput),
+    run / javaOptions ++= Seq("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8", "-Dstdin.encoding=UTF-8"),
+    Compile / mainClass := Some("mahilo.cli.MahiloCli")
   )

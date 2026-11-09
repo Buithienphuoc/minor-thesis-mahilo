@@ -78,3 +78,24 @@ def test_http_endpoint(monkeypatch):
     assert res.status_code == 200
     assert res.json()["tool_calls"][0]["name"] == "contact_human"
     assert seen == ["http://mahilo/engine/turns/t1/tools"]
+
+
+def test_product_agent_returns_structured_feature_analysis():
+    import json
+    caller = FakeCaller()
+    req = TurnRequest.model_validate({
+        "turn_id": "t2",
+        "agent": {"name": "ProductAgent", "kind": "pydantic_ai"},
+        "messages": [
+            {"role": "system", "content": "You are product"},
+            {"role": "user", "content": "Pending messages: SalesAgent: What is the status of the mahilo integration?"},
+        ],
+        "tools": TOOLS + [{"name": "analyze_feature_request", "description": "Analyze",
+                           "parameters": {"type": "object", "properties": {"feature": {"type": "string"}}, "required": ["feature"]}}],
+        "callback": {"url": "http://unused"},
+    })
+    res = asyncio.run(run_turn(req, demo_model("ProductAgent"), caller))
+    assert [c[0] for c in caller.calls] == ["analyze_feature_request", "chat_with_agent"]
+    assert caller.calls[1][1]["agent_name"] == "SalesAgent"
+    assert json.loads(res.reply)["feature_name"] == "mahilo integration"   # output kiểu FeatureAnalysis
+    assert [t.name for t in res.tool_calls] == ["analyze_feature_request", "chat_with_agent"]  # không có final_result

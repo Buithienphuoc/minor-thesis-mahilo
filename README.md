@@ -4,33 +4,46 @@ Bản port của [Mahilo](https://github.com/wjayesh/mahilo) (Python, commit `6c
 
 Dự án này độc lập hoàn toàn với Health Care demo, không dùng chung code.
 
+📘 **Hướng dẫn sử dụng từng bước cho mỗi tình huống: [docs/user-guide.md](docs/user-guide.md)**
+
 ## Chạy thử trong 1 phút (không cần API key)
 
 Cần JDK 17+ và [sbt](https://www.scala-sbt.org/download).
 
 ```bash
-sbt test                                                        # 25 test (thêm 3 test pytest ở engines/pydanticai-engine)
+sbt test                                                        # 30 test (thêm 4 test pytest ở engines/pydanticai-engine)
 sbt "bootstrap/runMain mahilo.bootstrap.DemoMain"               # kịch bản Dispatcher ↔ Plumber trong terminal
 sbt "bootstrap/runMain mahilo.bootstrap.DemoMain --langgraph4j" # như trên, nhưng plumber chạy bằng LangGraph4j
 ```
 
 Demo dùng một "bộ não" giả lập (`DemoBrain`) thay cho LLM, nên chạy offline mà vẫn đi qua đủ: tool calling, broker, hàng đợi, worker nền, `contact_human`, ký HMAC, telemetry.
 
-Chạy server thật (HTTP + WebSocket, lưu SQLite):
+Chạy server rồi cho mỗi agent một client, giống bản Python (`run_server.py` + `mahilo connect --agent-name X`):
 
 ```bash
-export OPENAI_API_KEY=sk-...
-sbt "bootstrap/runMain mahilo.bootstrap.ServerMain"
-
-# hoặc không cần key:
+# terminal 1: server (bỏ MAHILO_LLM=scripted và đặt OPENAI_API_KEY để dùng GPT thật)
 MAHILO_LLM=scripted sbt "bootstrap/runMain mahilo.bootstrap.ServerMain"
 
-curl -X POST localhost:8000/chat/dispatcher -d 'Toilet nhà tôi bị tắc'
-curl localhost:8000/messages
-# WebSocket: ws://localhost:8000/ws/dispatcher , ws://localhost:8000/ws/plumber
+# terminal 2, 3: client cho từng agent
+scripts/mahilo-connect.sh --agent-name dispatcher
+scripts/mahilo-connect.sh --agent-name plumber
 ```
 
-Biến môi trường (xem `ServerMain.scala`): `MAHILO_LLM` = `openai` | `langchain4j` | `scripted`; `MAHILO_ENGINE` = `native` | `langgraph4j`; `MAHILO_LLM_MODEL`, `MAHILO_LLM_BASE_URL` (Ollama, vLLM... đều được), `MAHILO_DB`, `MAHILO_SECRET_KEY`, `MAHILO_POLICIES=anti_loop,message_length`, `PORT`.
+Ví dụ **team_of_agents** (SalesAgent chạy engine gốc, MarketingAgent chạy LangGraph4j, ProductAgent chạy PydanticAI qua REST):
+
+```bash
+# terminal 1: service PydanticAI
+cd engines/pydanticai-engine && PYDANTICAI_MODEL=demo uvicorn mahilo_pydanticai.app:app --port 8001
+# terminal 2: server
+MAHILO_EXAMPLE=team MAHILO_LLM=scripted MAHILO_PYDANTICAI_URL=http://localhost:8001 sbt "bootstrap/runMain mahilo.bootstrap.ServerMain"
+# terminal 3, 4
+scripts/mahilo-connect.sh --agent-name SalesAgent
+scripts/mahilo-connect.sh --agent-name MarketingAgent
+```
+
+REST cũng dùng được: `curl -X POST localhost:8000/chat/dispatcher -d 'Toilet nhà tôi bị tắc'`, `curl localhost:8000/messages`.
+
+Biến môi trường (xem `ServerMain.scala` hoặc [mục 4 của user guide](docs/user-guide.md#4-dùng-llm-thật)): `MAHILO_EXAMPLE` = `dispatcher` | `team`; `MAHILO_LLM` = `openai` | `langchain4j` | `scripted`; `MAHILO_ENGINE` = `native` | `langgraph4j`; `MAHILO_LLM_MODEL`, `MAHILO_LLM_BASE_URL` (Ollama, vLLM... đều được), `MAHILO_DB`, `MAHILO_SECRET_KEY`, `MAHILO_POLICIES=anti_loop,message_length`, `PORT`, `MAHILO_PYDANTICAI_URL`, `MAHILO_PYDANTICAI_AGENTS`.
 
 ## Kiến trúc
 
@@ -75,6 +88,7 @@ Không adapter nào biết adapter khác. Đổi SQLite sang Postgres, hay OpenA
 5. `Mahilo.scala`: lắp các service lại với nhau.
 6. Một adapter bất kỳ, ví dụ `adapter-local/InMemoryMessageStore.scala` cạnh `adapter-persistence-sqlite/SqliteMessageStore.scala`: cùng một port, hai cách hiện thực.
 7. `bootstrap/DemoMain.scala`: đặt breakpoint ở đây và chạy theo luồng.
+8. `bootstrap/ServerMain.scala`: composition root của server, chỗ chọn ví dụ, LLM và engine cho từng agent. Sau đó xem `test/.../TeamOfAgentsSpec.scala`.
 
 ## Đối chiếu Python → Scala
 
@@ -97,6 +111,8 @@ Không adapter nào biết adapter khác. Đổi SQLite sang Postgres, hay OpenA
 | `server.py` | `adapter-http` (`MahiloRoutes`, `WebSocketHumanGateway`) + `DeliveryWorker` | |
 | `monitoring.py` | port `Telemetry` + `InMemoryTelemetry` | |
 | `templates/centralized/*` | `bootstrap/templates/CentralizedTemplates` | Prompt giữ nguyên |
+| `examples/team_of_agents/*` + `control_plane.py` | `bootstrap/templates/TeamOfAgentsTemplates` + `ServerMain` (`MAHILO_EXAMPLE=team`) | Prompt, tool và dữ liệu giả giữ nguyên; `FeatureAnalysis` ở `engines/pydanticai-engine/.../profiles.py` |
+| `cli.py` + `client.py` (`mahilo connect`) | `modules/cli` (`MahiloCli`) + `scripts/mahilo-connect.sh` | Chỉ phụ thuộc JDK, không phụ thuộc lõi; `--json` gửi giống hệt client Python |
 
 ## LangChain4j và LangGraph4j
 
@@ -138,12 +154,11 @@ Mahilo-Scala ── POST /v1/turns ───────────────
 9. Session lưu theo `name` của agent, và mỗi agent có `Mutex` nên chat trực tiếp và hộp thư không chạy chồng nhau.
 10. Hàng đợi event-driven (`Queue` của cats-effect) thay cho poll SQLite mỗi giây; khởi động lại thì tự đánh thức agent còn tin pending.
 11. Prompt và bộ tool thống nhất: chat trực tiếp trả lời thẳng người dùng, `contact_human` chỉ dùng khi xử lý hộp thư.
-12. Có test cho lõi (25 test), log lỗi qua `Console` thay cho `print`.
+12. Có test cho lõi (30 test), log lỗi qua `Console` thay cho `print`.
 13. Tin sai chữ ký bị đánh dấu `failed` (Python để `pending` mãi và quét lại mỗi giây).
 
 ## Chưa port
 
 - **Voice (OpenAI Realtime)** và client PyAudio. Muốn thêm: một adapter WebSocket proxy trong `adapter-http`, cộng một hiện thực `HumanGateway` có thể "nói".
-- **CLI `mahilo connect`**: dùng `curl`/`websocat` hoặc test `HttpAdapterSpec` làm mẫu.
 - **Xuất OpenTelemetry**: hiện chỉ đếm trong RAM; thêm adapter otel4s hiện thực port `Telemetry`.
 - Đường gọi OpenAI thật (`OpenAiCompatibleLlmClient`, `LangChain4jModels.openAi`) đã compile và test phần chuyển đổi JSON, nhưng chưa gọi thử với API key thật.

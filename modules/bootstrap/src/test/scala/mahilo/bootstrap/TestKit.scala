@@ -27,15 +27,17 @@ object TestKit:
       agents: List[AgentDefinition] = CentralizedTemplates.all.map(AgentDefinition(_)),
       config: MahiloConfig = MahiloConfig(retryDelay = 10.millis),
       signer: EnvelopeSigner = HmacEnvelopeSigner("test"),
-      preload: MessageStore => IO[Unit] = _ => IO.unit
+      preload: MessageStore => IO[Unit] = _ => IO.unit,
+      startActive: List[AgentName] = List(dispatcher),
+      humans: Set[AgentName] = Set(dispatcher, plumber)
   ): Resource[IO, TestSystem] =
     for
       store     <- Resource.eval(InMemoryMessageStore.make)
       _         <- Resource.eval(preload(store))
       sessions  <- Resource.eval(InMemorySessionRepository.make)
       telemetry <- Resource.eval(InMemoryTelemetry.make)
-      human     <- Resource.eval(LocalHumanGateway.make(Set(dispatcher, plumber), echo = false))
-      mahilo    <- Mahilo.resource(agents, List(dispatcher), MahiloPorts(llm, store, sessions, human, telemetry, signer), config)
+      human     <- Resource.eval(LocalHumanGateway.make(humans, echo = false))
+      mahilo    <- Mahilo.resource(agents, startActive, MahiloPorts(llm, store, sessions, human, telemetry, signer), config)
     yield TestSystem(mahilo, store, human, telemetry, sessions)
 
   /** Chờ điều kiện đúng (worker chạy nền nên kết quả đến không đồng bộ). */
