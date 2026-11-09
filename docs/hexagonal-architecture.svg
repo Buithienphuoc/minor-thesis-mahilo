@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1010" viewBox="0 0 1600 1010">
+<defs><marker id="ah-2f9e57" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f9e57"/></marker><marker id="ah-3b6fd8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b6fd8"/></marker><marker id="ah-d1553a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d1553a"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="800.0" y="34.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="22" font-weight="bold" fill="#1f2328" text-anchor="middle">mahilo-scala: Hexagonal Architecture (Ports &amp; Adapters)</text>
+<text x="800.0" y="56.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="13" font-weight="normal" fill="#57606a" text-anchor="middle">Mũi tên = chiều gọi. Lõi (lục giác) chỉ biết các port; adapter bên ngoài hiện thực hoặc gọi vào port.</text>
+<polygon points="800.0,80.0 453.6,280.0 453.6,680.0 800.0,880.0 1146.4,680.0 1146.4,280.0" fill="#eef4ff" stroke="#3b6fd8" stroke-width="2.5"/>
+<rect x="648.0" y="268.0" width="304.0" height="368.0" rx="10" fill="#dbe7ff" stroke="#3b6fd8" stroke-width="1.5"/>
+<text x="660.0" y="292.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="15" font-weight="bold" fill="#1f2328" text-anchor="start">application</text>
+<text x="660.0" y="310.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="11" font-weight="normal" fill="#57606a" text-anchor="start">use case + port · cats-effect</text>
+<text x="662.0" y="334.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">• AgentRuntime (chat, processInbox, tool)</text>
+<text x="662.0" y="352.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">• ToolLoopEngine (vòng lặp tool-calling)</text>
+<text x="662.0" y="370.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">• MessageBroker (hàng đợi, ký, policy)</text>
+<text x="662.0" y="388.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">• PolicyEngine · DeliveryWorker</text>
+<text x="662.0" y="406.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">• AgentDirectory · ObservationService</text>
+<text x="662.0" y="424.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">• Mahilo.scala (lắp các service)</text>
+<rect x="662.0" y="453.0" width="276.0" height="167.0" rx="10" fill="#fff4d6" stroke="#c98a00" stroke-width="1.5"/>
+<text x="672.0" y="476.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">domain</text>
+<text x="672.0" y="498.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">Envelope · MessageKind · DeliveryState</text>
+<text x="672.0" y="517.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">ChatMessage · Session · AgentSpec</text>
+<text x="672.0" y="536.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">ToolSpec · ToolCall</text>
+<text x="672.0" y="555.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">Policy · StandardPolicies</text>
+<text x="672.0" y="574.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">NaturalLanguageJudge · TextSimilarity</text>
+<text x="672.0" y="593.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">PromptBuilder · TelemetryEvent</text>
+<text x="672.0" y="612.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">thuần Scala: không IO, không thư viện ngoài</text>
+<rect x="441.6" y="305.0" width="190.0" height="42.0" rx="6" fill="#ffffff" stroke="#2f9e57" stroke-width="1.8"/>
+<text x="536.6" y="324.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">ChatUseCase</text>
+<text x="536.6" y="338.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="10" font-weight="normal" fill="#57606a" text-anchor="middle">chat trực tiếp</text>
+<rect x="441.6" y="393.0" width="190.0" height="42.0" rx="6" fill="#ffffff" stroke="#2f9e57" stroke-width="1.8"/>
+<text x="536.6" y="412.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">InboxUseCase</text>
+<text x="536.6" y="426.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="10" font-weight="normal" fill="#57606a" text-anchor="middle">xử lý hộp thư</text>
+<rect x="441.6" y="481.0" width="190.0" height="42.0" rx="6" fill="#ffffff" stroke="#2f9e57" stroke-width="1.8"/>
+<text x="536.6" y="500.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">AdminUseCase</text>
+<text x="536.6" y="514.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="10" font-weight="normal" fill="#57606a" text-anchor="middle">activate, bật/tắt policy</text>
+<rect x="441.6" y="569.0" width="190.0" height="42.0" rx="6" fill="#ffffff" stroke="#2f9e57" stroke-width="1.8"/>
+<text x="536.6" y="588.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">ObservationQuery</text>
+<text x="536.6" y="602.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="10" font-weight="normal" fill="#57606a" text-anchor="middle">agents, messages, metrics</text>
+<text x="447.6" y="290.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="bold" fill="#2f9e57" text-anchor="start">PORT VÀO (driving)</text>
+<text x="980.4" y="270.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="bold" fill="#d1553a" text-anchor="start">PORT RA (driven)</text>
+<rect x="980.4" y="282.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="303.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">LlmClient</text>
+<rect x="1205.0" y="92.0" width="365.0" height="102.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="115.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">LLM</text>
+<text x="1215.0" y="135.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-llm-openai: OpenAiCompatibleLlmClient</text>
+<text x="1215.0" y="152.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-langchain4j: LangChain4jLlmClient</text>
+<text x="1215.0" y="169.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-local: ScriptedLlmClient (giả lập)</text>
+<text x="1215.0" y="186.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">→ OpenAI, Ollama, vLLM (Chat Completions)</text>
+<path d="M1158.4,299.0 C1188.4,299.0 1175,143.0 1203,143.0" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="980.4" y="334.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="355.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">AgentEngine</text>
+<rect x="1205.0" y="206.0" width="365.0" height="102.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="229.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">Bộ máy chạy một lượt agent</text>
+<text x="1215.0" y="249.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">application: ToolLoopEngine (mặc định)</text>
+<text x="1215.0" y="266.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-langchain4j: LangGraph4jEngine</text>
+<text x="1215.0" y="283.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-remote-engine: RemoteAgentEngine</text>
+<text x="1215.0" y="300.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">→ service Python pydanticai-engine (REST)</text>
+<path d="M1158.4,351.0 C1188.4,351.0 1175,257.0 1203,257.0" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="980.4" y="386.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="407.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">MessageStore</text>
+<rect x="1205.0" y="320.0" width="365.0" height="85.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="343.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">Hàng đợi tin liên agent</text>
+<text x="1215.0" y="363.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-persistence-sqlite: SqliteMessageStore</text>
+<text x="1215.0" y="380.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-local: InMemoryMessageStore</text>
+<text x="1215.0" y="397.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">→ file SQLite (JDBC)</text>
+<path d="M1158.4,403.0 C1188.4,403.0 1175,362.5 1203,362.5" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="980.4" y="438.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="459.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">SessionRepository</text>
+<rect x="1205.0" y="417.0" width="365.0" height="68.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="440.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">Lịch sử hội thoại</text>
+<text x="1215.0" y="460.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-persistence-sqlite: SqliteSessionRepository</text>
+<text x="1215.0" y="477.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-local: InMemorySessionRepository</text>
+<path d="M1158.4,455.0 C1188.4,455.0 1175,451.0 1203,451.0" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="980.4" y="490.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="511.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">HumanGateway</text>
+<rect x="1205.0" y="497.0" width="365.0" height="85.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="520.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">Gửi tin cho người dùng</text>
+<text x="1215.0" y="540.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-http: WebSocketHumanGateway</text>
+<text x="1215.0" y="557.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-local: LocalHumanGateway</text>
+<text x="1215.0" y="574.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">→ trình duyệt qua WebSocket</text>
+<path d="M1158.4,507.0 C1188.4,507.0 1175,539.5 1203,539.5" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="980.4" y="542.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="563.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">Telemetry</text>
+<rect x="1205.0" y="594.0" width="365.0" height="51.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="617.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">Đo đạc</text>
+<text x="1215.0" y="637.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-local: InMemoryTelemetry</text>
+<path d="M1158.4,559.0 C1188.4,559.0 1175,619.5 1203,619.5" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="980.4" y="594.0" width="178.0" height="34.0" rx="6" fill="#ffffff" stroke="#d1553a" stroke-width="1.8"/>
+<text x="1069.4" y="615.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="12" font-weight="bold" fill="#1f2328" text-anchor="middle">EnvelopeSigner</text>
+<rect x="1205.0" y="657.0" width="365.0" height="51.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="1215.0" y="680.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">Ký phong bì tin</text>
+<text x="1215.0" y="700.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter-local: HmacEnvelopeSigner (HMAC)</text>
+<path d="M1158.4,611.0 C1188.4,611.0 1175,682.5 1203,682.5" fill="none" stroke="#d1553a" stroke-width="1.6" marker-end="url(#ah-d1553a)"/>
+<rect x="30.0" y="240.0" width="330.0" height="136.0" rx="10" fill="#e6f6ea" stroke="#2f9e57" stroke-width="1.5"/>
+<text x="40.0" y="263.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">adapter-http (http4s Ember)</text>
+<text x="40.0" y="283.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">MahiloRoutes: POST /chat/{agent}</text>
+<text x="40.0" y="300.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">GET /agents, /messages, /metrics,</text>
+<text x="40.0" y="317.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">      /conversations/{a}/{b}, /policies…</text>
+<text x="40.0" y="334.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">POST /agents/{a}/activate, /policies/…/enable</text>
+<text x="40.0" y="351.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">WebSocket /ws/{agent}</text>
+<text x="40.0" y="368.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">← người dùng, curl, trình duyệt</text>
+<path d="M360,274.0 C400,274.0 401.6,326.0 439.6,326.0" fill="none" stroke="#2f9e57" stroke-width="1.6" marker-end="url(#ah-2f9e57)"/>
+<path d="M360,314.8 C400,314.8 401.6,502.0 439.6,502.0" fill="none" stroke="#2f9e57" stroke-width="1.6" marker-end="url(#ah-2f9e57)"/>
+<path d="M360,348.8 C400,348.8 401.6,590.0 439.6,590.0" fill="none" stroke="#2f9e57" stroke-width="1.6" marker-end="url(#ah-2f9e57)"/>
+<rect x="30.0" y="540.0" width="330.0" height="68.0" rx="10" fill="#e6f6ea" stroke="#2f9e57" stroke-width="1.5"/>
+<text x="40.0" y="563.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">bootstrap: DemoMain · test</text>
+<text x="40.0" y="583.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">kịch bản Dispatcher ↔ Plumber trong terminal</text>
+<text x="40.0" y="600.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">ConversationFlowSpec, HttpAdapterSpec…</text>
+<path d="M360,563.8 C400,563.8 401.6,326.0 439.6,326.0" fill="none" stroke="#2f9e57" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ah-2f9e57)"/>
+<path d="M360,584.2 C400,584.2 401.6,414.0 439.6,414.0" fill="none" stroke="#2f9e57" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ah-2f9e57)"/>
+<rect x="30.0" y="660.0" width="330.0" height="68.0" rx="10" fill="#dbe7ff" stroke="#3b6fd8" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="40.0" y="683.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">application: DeliveryWorker</text>
+<text x="40.0" y="703.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">worker nền, có tin mới thì gọi processInbox</text>
+<text x="40.0" y="720.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">(nằm trong lõi, vẽ ở đây để thấy ai gọi port)</text>
+<path d="M360,687.2 C410,687.2 401.6,414.0 439.6,414.0" fill="none" stroke="#3b6fd8" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ah-3b6fd8)"/>
+<rect x="30.0" y="785.0" width="330.0" height="85.0" rx="10" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="40.0" y="808.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="14" font-weight="bold" fill="#1f2328" text-anchor="start">adapter-remote-engine: RemoteEngineRoutes</text>
+<text x="40.0" y="828.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">callback POST /engine/turns/{id}/tools/{tool}</text>
+<text x="40.0" y="845.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">← pydanticai-engine gọi tool, chạy qua lõi</text>
+<text x="40.0" y="862.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">cùng module với RemoteAgentEngine (bên phải)</text>
+<rect x="30.0" y="90.0" width="330.0" height="120.0" rx="10" fill="#ffffff" stroke="#8c959f" stroke-width="1"/>
+<text x="42.0" y="112.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="13" font-weight="bold" fill="#1f2328" text-anchor="start">Chú thích</text>
+<rect x="42.0" y="124.0" width="18.0" height="12.0" rx="3" fill="#e6f6ea" stroke="#2f9e57" stroke-width="1.5"/>
+<text x="68.0" y="135.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter vào (driving): gọi lõi</text>
+<rect x="42.0" y="146.0" width="18.0" height="12.0" rx="3" fill="#fdebe7" stroke="#d1553a" stroke-width="1.5"/>
+<text x="68.0" y="157.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">adapter ra (driven): lõi gọi ra ngoài</text>
+<rect x="42.0" y="168.0" width="18.0" height="12.0" rx="3" fill="#fff4d6" stroke="#c98a00" stroke-width="1.5"/>
+<text x="68.0" y="179.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#1f2328" text-anchor="start">domain thuần · xanh dương = application</text>
+<text x="42.0" y="199.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start" font-style="italic">~ chữ nghiêng xám: hệ thống bên ngoài</text>
+<rect x="30.0" y="905.0" width="1540.0" height="72.0" rx="10" fill="#f1ecff" stroke="#7a5bd6" stroke-width="1.5"/>
+<text x="48.0" y="932.0" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="15" font-weight="bold" fill="#1f2328" text-anchor="start">bootstrap  (composition root)</text>
+<text x="48.0" y="954.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="13" font-weight="normal" fill="#1f2328" text-anchor="start">ServerMain / DemoMain: nơi duy nhất biết mọi adapter và chọn adapter nào cắm vào port nào (MAHILO_LLM, MAHILO_ENGINE, MAHILO_DB, MAHILO_POLICIES…).</text>
+<text x="48.0" y="971.0" font-family="'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif" font-size="12" font-weight="normal" fill="#57606a" text-anchor="start">Chiều phụ thuộc sbt: bootstrap → adapter-* → application → domain. Không adapter nào import adapter khác.</text>
+</svg>
