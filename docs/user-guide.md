@@ -68,7 +68,7 @@ curl / REST ─────►│  /chat/<agent>    MessageBroker ─► hàng �
 
 Các lệnh trong guide viết theo bash. Trên Windows dùng PowerShell như sau:
 
-1. **Dùng JDK 21 (LTS).** Với JDK 24/25 bạn sẽ thấy các dòng `[error] WARNING: A terminally deprecated method in sun.misc.Unsafe has been called ...`. Đó **không phải lỗi**: Scala 3.3 dùng `sun.misc.Unsafe` cho `lazy val`, JDK mới cảnh báo việc này, và sbt gắn nhãn `[error]` cho mọi dòng stderr của tiến trình con. Chương trình vẫn chạy đúng. JDK 21 không in các dòng này.
+1. **Nên dùng JDK 21 (LTS).** JDK 24/25 vẫn chạy được. `build.sbt` đã tắt các cảnh báo của chương trình (`sun.misc.Unsafe`, `System::load` của sqlite-jdbc, `IOApp main is running on a thread other than the main thread`). Riêng 4 dòng `WARNING: ... sun.misc.Unsafe ...` đầu tiên do chính sbt in ra khi khởi động thì vẫn còn. Đó **không phải lỗi**, JDK 21 không in chúng.
 2. **Cho terminal hiển thị tiếng Việt** (nếu không sẽ thấy `M├¼nh ─æ├ú...`):
 
    ```powershell
@@ -587,12 +587,12 @@ Test chạy hoàn toàn offline. LLM được giả lập bằng `ScriptedLlmCli
 | sbt báo `429 Too Many Requests` khi tải thư viện | Tạo `~/.sbt/repositories` với nội dung `[repositories]`, `local`, `google: https://maven-central.storage-download.googleapis.com/maven2/` (mỗi dòng một mục), rồi chạy sbt với `-Dsbt.override.build.repos=true` |
 | CLI báo `Không nối được tới ws://...` | Server chưa chạy, sai cổng (`--url`), hoặc sai tên agent (phân biệt hoa thường: `SalesAgent`) |
 | CLI nhận `Agent X is not active.` | `curl -X POST localhost:8000/agents/X/activate`, hoặc để agent khác nhắn cho X trước |
-| Chữ tiếng Việt hiện thành `?` hoặc `M├¼nh ─æ├ú` | Terminal không ở UTF-8. Repo đã có `.jvmopts` đặt UTF-8 cho sbt; trên Windows chạy `chcp 65001` (xem mục 0b) |
+| Chữ tiếng Việt hiện thành `?` hoặc `M├¼nh ─æ├ú` | Terminal không ở UTF-8: trên Windows chạy `chcp 65001` (xem mục 0b). Nếu vẫn lỗi ở các dòng có `[info]` phía trước thì bạn đang dùng bản cũ: bản mới cho server in thẳng ra terminal (`run / outputStrategy := Some(StdoutOutput)`), sbt không đọc lại bằng bảng mã cũ của Windows nữa |
 | Server báo thiếu `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Đặt key trong `.env` hoặc biến môi trường, hoặc dùng `MAHILO_LLM=scripted` |
 | Claude trả `401 authentication_error` | Key sai hoặc đã bị thu hồi. Tạo key mới ở https://platform.claude.com/settings/keys |
 | Claude trả `429 rate_limit_error` | Vượt giới hạn tốc độ của tài khoản. SDK tự thử lại 2 lần; nếu vẫn lỗi thì đợi chút, hoặc dùng `MAHILO_LLM_EFFORT=low` / model nhỏ hơn |
-| `[error] WARNING: ... sun.misc.Unsafe ...` | Chỉ là cảnh báo của JDK 24+, không phải lỗi. Dùng JDK 21 để hết (xem mục 0b) |
-| `[WARNING] IOApp main is running on a thread other than the main thread` | Cảnh báo của cats-effect, chương trình vẫn chạy đúng. Thấy trên Windows + JDK 25; không xuất hiện với JDK 21 |
+| `WARNING: ... sun.misc.Unsafe ...` hoặc `System::load ... sqlite-jdbc` | Cảnh báo của JDK 24+, không phải lỗi. Bản mới đã tắt chúng cho server; vài dòng đầu do sbt in ra vẫn còn. Dùng JDK 21 để hết hẳn (xem mục 0b) |
+| `[WARNING] IOApp main is running on a thread other than the main thread` | Cảnh báo nhầm của cats-effect khi chạy qua sbt trên JDK 25. Bản mới đã tắt (`-Dcats.effect.warnOnNonMainThreadDetected=false`); chương trình vẫn đúng vì `run` đã fork |
 | `⚠️ Chưa đặt MAHILO_PYDANTICAI_URL` | Bình thường nếu bạn không chạy service Python. ProductAgent dùng engine gốc |
 | ProductAgent không trả lời, log Scala có lỗi kết nối 8001 | Service PydanticAI chưa chạy. Kiểm tra bằng `curl localhost:8001/health` |
 | Port 8000 bị chiếm | `PORT=8080 ...` cho server và `--url http://localhost:8080` cho CLI |
