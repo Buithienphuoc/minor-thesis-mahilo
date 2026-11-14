@@ -66,6 +66,10 @@ Cách đọc sơ đồ (mũi tên là chiều gọi):
 
 Sơ đồ (file SVG) được vẽ theo code hiện tại; nếu thêm port hay adapter mới thì nhớ cập nhật `docs/hexagonal-architecture.svg`.
 
+Luồng chạy từ lúc start server tới khi hai agent nói chuyện với nhau (các lần gọi OpenAI/Anthropic tô đỏ): xem [docs/sequence-diagram.md](docs/sequence-diagram.md).
+
+Quy ước code: mỗi `class`, `object`, `trait`, `enum` nằm trong một file riêng, đặt tên theo kiểu đó (giống Java), và không khai báo class/object lồng nhau. Ngoại lệ duy nhất là companion object, vì Scala bắt buộc nó nằm cùng file với class (hoặc `opaque type`) của nó.
+
 Quy tắc phụ thuộc, được sbt kiểm tra (module không khai báo `dependsOn` thì không import được):
 
 | Module | Phụ thuộc | Thư viện ngoài |
