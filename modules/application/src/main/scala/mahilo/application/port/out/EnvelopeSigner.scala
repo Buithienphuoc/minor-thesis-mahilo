@@ -12,6 +12,4 @@ trait EnvelopeSigner:
 
 object EnvelopeSigner:
   /** Không ký, không kiểm tra (Python: khi `secret_key=None`). */
-  val Disabled: EnvelopeSigner = new EnvelopeSigner:
-    def sign(envelope: Envelope): Envelope   = envelope
-    def verify(envelope: Envelope): Boolean  = true
+  val Disabled: EnvelopeSigner = DisabledEnvelopeSigner

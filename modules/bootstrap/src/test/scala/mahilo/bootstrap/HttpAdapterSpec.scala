@@ -2,7 +2,7 @@ package mahilo.bootstrap
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse, WebSocket}
-import java.util.concurrent.{CompletionStage, LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import scala.concurrent.duration.*
 import cats.effect.{IO, Resource}
 import munit.CatsEffectSuite
@@ -38,9 +38,7 @@ class HttpAdapterSpec extends CatsEffectSuite:
   /** Client WebSocket tối giản: gom các frame text nhận được vào một hàng đợi. */
   private def wsConnect(port: Int, agent: String): IO[(WebSocket, LinkedBlockingQueue[String])] = IO.blocking {
     val inbox = LinkedBlockingQueue[String]()
-    val listener = new WebSocket.Listener:
-      override def onText(ws: WebSocket, data: CharSequence, last: Boolean): CompletionStage[?] =
-        inbox.put(data.toString); ws.request(1); null
+    val listener = QueueingListener(inbox)
     val ws = http.newWebSocketBuilder().buildAsync(URI.create(s"ws://127.0.0.1:$port/ws/$agent"), listener).get(5, TimeUnit.SECONDS)
     (ws, inbox)
   }

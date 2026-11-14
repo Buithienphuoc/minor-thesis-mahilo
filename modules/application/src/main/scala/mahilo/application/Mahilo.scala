@@ -6,7 +6,6 @@ import cats.syntax.all.*
 import mahilo.application.port.in.*
 import mahilo.application.service.*
 import mahilo.domain.AgentName
-import mahilo.domain.policy.Policy
 import mahilo.domain.telemetry.TelemetryEvent
 
 /** Mặt tiền của lõi: gom các port vào để adapter vào (HTTP, CLI, test) dùng.
@@ -51,9 +50,5 @@ object Mahilo:
       // Khởi động lại sau sự cố: đánh thức agent nào còn tin pending trong store.
       _          <- Resource.eval(ports.store.recipientsWithPending.flatMap(_.toList.traverse_(wakeUp)))
       _          <- DeliveryWorker.run(queue, runtime).background
-      admin       = new AdminUseCase:
-                      def activate(agent: AgentName): IO[Boolean] = runtime.activate(agent)
-                      def enablePolicy(name: String): IO[Unit]    = policies.update(_.setEnabled(name, true))
-                      def disablePolicy(name: String): IO[Unit]   = policies.update(_.setEnabled(name, false))
-                      def addPolicy(policy: Policy): IO[Unit]     = policies.update(_.add(policy))
+      admin       = AdminService(runtime, policies)
     yield Mahilo(runtime, runtime, admin, ObservationService(directory, ports.store, ports.telemetry, policies))
