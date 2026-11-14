@@ -1,0 +1,112 @@
+@startuml
+title Mahilo Scala: sequence diagram (mũi tên đỏ = gọi OpenAI / Anthropic API)
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+actor "Người chạy server\n(PowerShell 1)" as admin
+actor "Khách\n(PowerShell 2)" as khach
+participant "MahiloCli\nagent 1: dispatcher" as cli1
+actor "Thợ\n(PowerShell 3)" as tho
+participant "MahiloCli\nagent 2: plumber" as cli2
+participant "ServerMain\n(bootstrap)" as main
+participant "HttpServer\nMahiloRoutes" as http
+participant "WebSocket\nHumanGateway" as gw
+participant "AgentRuntime\n(lõi Mahilo)" as rt
+participant "DeliveryWorker" as worker
+participant "MessageBroker\nPolicyEngine" as broker
+participant "SQLite\nMessageStore + Session" as db
+participant "ToolLoopEngine\n(AgentEngine)" as eng
+participant "LlmClient adapter\nAnthropic / OpenAI" as llm
+participant "Anthropic API\nhoặc OpenAI API" as api
+== Start point 1: start server   (sbt bootstrap/run) ==
+admin -> main: sbt bootstrap/run
+main -> main: DotEnv.load(.env): MAHILO_LLM, ANTHROPIC_API_KEY / OPENAI_API_KEY
+main -> llm: AnthropicLlmClient.resource(...) hoặc OpenAiCompatibleLlmClient(...)  (chỉ tạo client, chưa gọi mạng)
+main -> main: buildExample: CentralizedTemplates → tạo agent dispatcher, plumber, mold_specialist
+main -> db: SqliteMessageStore.make / SqliteSessionRepository.make (mahilo.db)
+main -> gw: WebSocketHumanGateway.make
+main -> rt: Mahilo.resource(agents, startActive = [dispatcher], ports)
+rt -> rt: activate(dispatcher)
+rt -> db: recipientsWithPending  (đánh thức agent còn tin chờ)
+rt -> worker: DeliveryWorker.run(queue) chạy nền, chờ queue.take
+main -> http: HttpServer.resource(0.0.0.0:8000)
+main --> admin: banner: HTTP http://[::]:8000  •  WebSocket ws://localhost:8000/ws/<agent>
+note across: Khởi động KHÔNG gọi OpenAI/Anthropic. API key chỉ được dùng khi agent cần suy nghĩ.
+== Start point 2: tạo kết nối cho agent 1 (dispatcher) ==
+khach -> cli1: mahilo-connect.ps1 --agent-name dispatcher
+cli1 -> http: GET /ws/dispatcher  (WebSocket upgrade)
+http -> gw: connect(dispatcher) → hàng đợi outbox
+cli1 --> khach: Enter message for dispatcher
+== Start point 3: tạo kết nối cho agent 2 (plumber) ==
+tho -> cli2: mahilo-connect.ps1 --agent-name plumber
+cli2 -> http: GET /ws/plumber  (WebSocket upgrade)
+http -> gw: connect(plumber) → hàng đợi outbox
+cli2 --> tho: Enter message for plumber
+note across: plumber chưa active: gõ tin lúc này sẽ nhận "Agent plumber is not active". Nó được bật khi dispatcher nhắn tới.
+== Hội thoại A: khách → dispatcher ==
+khach -> cli1: 'Toilet nhà tôi bị tắc'
+cli1 -> http: WebSocket text frame
+http -> rt: chat(dispatcher, text)
+rt -> db: sessions.load(dispatcher) + hội thoại của agent khác
+rt -> eng: run(AgentTurn: system prompt, tools = [chat_with_agent])
+eng -> llm: complete(LlmRequest)
+llm -[#red]> api: <color:red>POST /v1/messages  |  POST /v1/chat/completions</color>
+api -[#red]-> llm: <color:red>tool_use: chat_with_agent(plumber, ...)</color>
+llm --> eng: LlmReply(toolCalls)
+eng -> rt: executeTool(chat_with_agent)
+rt -> rt: activate(plumber) → wakeUp(plumber)
+rt -> broker: send(dispatcher → plumber, câu hỏi)
+broker -[#red]> api: <color:red>(chỉ khi bật policy dạng lời văn) NaturalLanguageJudge chấm tin</color>
+broker -> db: store.save(envelope, Pending)
+broker -> worker: wakeUp(plumber)  (queue.offer)
+eng -> llm: complete(... + tool_result 'Message sent to plumber')
+llm -[#red]> api: <color:red>POST lần 2 (kèm kết quả tool)</color>
+api -[#red]-> llm: <color:red>text: "Mình đã liên hệ thợ..."</color>
+eng --> rt: TurnResult(reply)
+rt -> db: sessions.save(dispatcher)
+rt --> http: ChatOutcome.Replied
+http --> cli1: WebSocket text
+cli1 --> khach: dispatcher: Mình đã liên hệ thợ...
+== Hội thoại B: plumber xử lý hộp thư (chạy nền, song song với bước cuối của A) ==
+worker -> rt: processInbox(plumber)
+rt -> db: broker.pending(plumber)
+rt -> eng: run(tools = [chat_with_agent, contact_human])
+eng -> llm: complete(LlmRequest)
+llm -[#red]> api: <color:red>POST</color>
+api -[#red]-> llm: <color:red>tool_use: contact_human("Khách báo toilet tắc, khi nào anh đến được?")</color>
+eng -> rt: executeTool(contact_human)
+rt -> gw: human.send(plumber, text)
+gw --> cli2: WebSocket text
+cli2 --> tho: plumber: Khách báo toilet tắc...
+eng -> llm: complete(... + tool_result)
+llm -[#red]> api: <color:red>POST lần 2</color>
+api -[#red]-> llm: <color:red>text (kết thúc lượt)</color>
+rt -> broker: acknowledge(envelope)
+broker -> db: updateState(Processed)
+== Hội thoại C: thợ trả lời → plumber → dispatcher → khách ==
+tho -> cli2: 'Chiều nay 3h tôi đến được'
+cli2 -> http: WebSocket text frame
+http -> rt: chat(plumber, text)
+rt -> eng: run(...)
+eng -> llm: complete(LlmRequest)
+llm -[#red]> api: <color:red>POST</color>
+api -[#red]-> llm: <color:red>tool_use: chat_with_agent(dispatcher, "Plumber says: 3h chiều")</color>
+rt -> broker: send(plumber → dispatcher)
+broker -> db: store.save(Pending)
+broker -> worker: wakeUp(dispatcher)
+eng -> llm: complete(... + tool_result)
+llm -[#red]> api: <color:red>POST lần 2</color>
+api -[#red]-> llm: <color:red>text</color>
+rt --> http: ChatOutcome.Replied
+http --> cli2: WebSocket text
+worker -> rt: processInbox(dispatcher)
+rt -> eng: run(tools = [chat_with_agent, contact_human])
+eng -> llm: complete(LlmRequest)
+llm -[#red]> api: <color:red>POST</color>
+api -[#red]-> llm: <color:red>tool_use: contact_human("Cập nhật từ thợ: 3h chiều")</color>
+rt -> gw: human.send(dispatcher, text)
+gw --> cli1: WebSocket text
+cli1 --> khach: dispatcher: Cập nhật từ thợ: 3h chiều
+eng -> llm: complete(... + tool_result)
+llm -[#red]> api: <color:red>POST lần 2</color>
+api -[#red]-> llm: <color:red>text (kết thúc lượt)</color>
+@enduml

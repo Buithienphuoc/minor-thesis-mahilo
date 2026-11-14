@@ -3,15 +3,6 @@ package mahilo.domain.messaging
 import java.time.Instant
 import mahilo.domain.{AgentName, MessageId}
 
-/** Python: `class MessageType(Enum)`. */
-enum MessageKind:
-  case Direct, Broadcast, Response, Error
-
-  def wire: String = this.toString.toLowerCase
-
-object MessageKind:
-  def fromWire(s: String): Option[MessageKind] = values.find(_.wire == s.toLowerCase)
-
 /** "Phong bì" bọc một tin nhắn giữa hai agent. Python: `@dataclass MessageEnvelope`.
   *
   * Phong bì là bất biến. Trạng thái giao nhận (pending/processed/failed) KHÔNG nằm ở đây

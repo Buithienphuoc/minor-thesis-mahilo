@@ -2,17 +2,11 @@ package mahilo.application.service
 
 import cats.effect.IO
 import cats.effect.std.UUIDGen
-import cats.syntax.all.*
 import mahilo.application.port.out.*
 import mahilo.domain.{AgentName, MessageId}
 import mahilo.domain.messaging.*
-import mahilo.domain.policy.{PolicyContext, PolicyViolation}
+import mahilo.domain.policy.PolicyContext
 import mahilo.domain.telemetry.TelemetryEvent
-
-/** Kết quả gửi một tin. Python luôn trả "Message sent" kể cả khi policy chặn. */
-enum SendOutcome:
-  case Queued(envelope: Envelope)
-  case Rejected(envelope: Envelope, violations: List[PolicyViolation])
 
 /** Bưu điện giữa các agent. Python: `MessageBroker` + `AgentManager.send_message_to_agent`.
   *

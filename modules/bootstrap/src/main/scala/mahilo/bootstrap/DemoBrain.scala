@@ -2,7 +2,7 @@ package mahilo.bootstrap
 
 import cats.effect.IO
 import mahilo.adapters.local.ScriptedLlmClient
-import mahilo.adapters.local.ScriptedLlmClient.Script.*
+import mahilo.adapters.local.Script.*
 import mahilo.application.port.out.{LlmReply, LlmRequest}
 import mahilo.domain.conversation.ChatMessage
 

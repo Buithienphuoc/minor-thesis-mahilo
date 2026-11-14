@@ -1,6 +1,5 @@
 package mahilo.application.service
 
-import scala.concurrent.duration.FiniteDuration
 import cats.effect.IO
 import cats.effect.std.{Console, Mutex, Supervisor}
 import cats.syntax.all.*
@@ -13,13 +12,6 @@ import mahilo.domain.messaging.{DeliveryState, StoredMessage}
 import mahilo.domain.prompt.PromptBuilder
 import mahilo.domain.telemetry.TelemetryEvent
 import mahilo.domain.tool.{BuiltinTools, ToolSpec}
-
-/** Tham số chạy của runtime.
-  * @param contextWindow     số tin cuối của mỗi agent khác đưa vào "Other Conversations" (Python: 7)
-  * @param maxToolIterations số vòng gọi tool tối đa trong một lượt (Python: không giới hạn)
-  * @param retryDelay        chờ bao lâu trước khi thử lại tin bị lỗi
-  */
-final case class RuntimeConfig(contextWindow: Int, maxToolIterations: Int, retryDelay: FiniteDuration)
 
 /** Trái tim của Mahilo: chạy một lượt của agent cho chat trực tiếp và cho hộp thư.
   * Python: phần lớn `BaseAgent` (agent.py, 917 dòng).

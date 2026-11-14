@@ -22,14 +22,6 @@ import mahilo.domain.AgentName
   */
 final class MahiloRoutes(mahilo: Mahilo, gateway: WebSocketHumanGateway):
 
-  private object SenderQ    extends OptionalQueryParamDecoderMatcher[String]("sender")
-  private object RecipientQ extends OptionalQueryParamDecoderMatcher[String]("recipient")
-  private object StartQ     extends OptionalQueryParamDecoderMatcher[Double]("start_time")
-  private object EndQ       extends OptionalQueryParamDecoderMatcher[Double]("end_time")
-  private object LimitQ     extends OptionalQueryParamDecoderMatcher[Int]("limit")
-  private object AgentQ     extends OptionalQueryParamDecoderMatcher[String]("agent_id")
-  private object PolicyQ    extends OptionalQueryParamDecoderMatcher[String]("policy_name")
-
   private def epoch(s: Double): Instant = Instant.ofEpochMilli((s * 1000).toLong)
 
   def routes(ws: WebSocketBuilder2[IO]): HttpRoutes[IO] = HttpRoutes.of[IO] {

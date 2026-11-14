@@ -13,7 +13,7 @@ import org.http4s.ember.server.EmberServerBuilder
 import com.anthropic.core.ObjectMappers
 import com.anthropic.models.messages.Message
 import mahilo.adapters.langchain4j.{ChatModelFromLlmClient, LangGraph4jEngine}
-import mahilo.adapters.llm.anthropic.{AnthropicConversions, AnthropicLlmClient}
+import mahilo.adapters.llm.anthropic.{AnthropicConversions, AnthropicLlmClient, AnthropicSettings}
 import mahilo.application.port.in.ChatOutcome
 import mahilo.application.service.AgentDefinition
 import mahilo.bootstrap.TestKit.*
@@ -53,7 +53,7 @@ class AnthropicSpec extends CatsEffectSuite:
       .withShutdownTimeout(Duration.Zero).withHttpApp(routes.orNotFound).build.map(_ => ())
 
   private def claude(port: Int) =
-    AnthropicLlmClient.resource(AnthropicConversions.Settings(), Some("test-key"), Some(s"http://127.0.0.1:$port"))
+    AnthropicLlmClient.resource(AnthropicSettings(), Some("test-key"), Some(s"http://127.0.0.1:$port"))
 
   private def checkSecondRequest(seen: Vector[(Json, Option[String])]): Unit =
     assertEquals(seen.size, 2, seen)

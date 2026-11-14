@@ -1,36 +1,12 @@
 package mahilo.application
 
-import scala.concurrent.duration.*
 import cats.effect.{IO, Resource}
 import cats.effect.std.{Mutex, Queue, Supervisor}
 import cats.syntax.all.*
 import mahilo.application.port.in.*
-import mahilo.application.port.out.*
 import mahilo.application.service.*
 import mahilo.domain.AgentName
-import mahilo.domain.messaging.RetryPolicy
-import mahilo.domain.policy.{Policy, PolicySet, StandardPolicies}
 import mahilo.domain.telemetry.TelemetryEvent
-
-/** Tất cả port ra mà lõi cần. Bootstrap chọn adapter cụ thể cho từng cái. */
-final case class MahiloPorts(
-    llm: LlmClient,
-    store: MessageStore,
-    sessions: SessionRepository,
-    human: HumanGateway,
-    telemetry: Telemetry,
-    signer: EnvelopeSigner = EnvelopeSigner.Disabled
-)
-
-final case class MahiloConfig(
-    contextWindow: Int = 7,
-    maxToolIterations: Int = 10,
-    retry: RetryPolicy = RetryPolicy(maxRetries = 3),
-    retryDelay: FiniteDuration = 1.second,
-    policyHistorySize: Int = 10,
-    policies: PolicySet = StandardPolicies.all, // 4 policy mặc định, đều tắt
-    policyJudgeModel: Option[String] = None
-)
 
 /** Mặt tiền của lõi: gom các port vào để adapter vào (HTTP, CLI, test) dùng.
   * Python: `AgentManager` (vừa là registry, vừa dựng broker/store/policy/telemetry).
@@ -74,9 +50,5 @@ object Mahilo:
       // Khởi động lại sau sự cố: đánh thức agent nào còn tin pending trong store.
       _          <- Resource.eval(ports.store.recipientsWithPending.flatMap(_.toList.traverse_(wakeUp)))
       _          <- DeliveryWorker.run(queue, runtime).background
-      admin       = new AdminUseCase:
-                      def activate(agent: AgentName): IO[Boolean] = runtime.activate(agent)
-                      def enablePolicy(name: String): IO[Unit]    = policies.update(_.setEnabled(name, true))
-                      def disablePolicy(name: String): IO[Unit]   = policies.update(_.setEnabled(name, false))
-                      def addPolicy(policy: Policy): IO[Unit]     = policies.update(_.add(policy))
+      admin       = AdminService(runtime, policies)
     yield Mahilo(runtime, runtime, admin, ObservationService(directory, ports.store, ports.telemetry, policies))
