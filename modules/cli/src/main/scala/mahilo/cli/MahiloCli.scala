@@ -2,7 +2,7 @@ package mahilo.cli
 
 import java.net.URI
 import java.net.http.{HttpClient, WebSocket}
-import java.util.concurrent.{CompletionStage, CountDownLatch}
+import java.util.concurrent.CountDownLatch
 import scala.io.StdIn
 
 /** Client dòng lệnh, tương đương `mahilo connect` của bản Python (`mahilo/cli.py`, `client.py`).
@@ -23,11 +23,9 @@ import scala.io.StdIn
   */
 object MahiloCli:
 
-  final case class Options(agent: String, url: String = "http://localhost:8000", json: Boolean = false)
-
-  def parse(args: List[String]): Either[String, Options] =
-    def loop(rest: List[String], agent: Option[String], url: String, json: Boolean): Either[String, Options] = rest match
-      case Nil                                 => agent.toRight(usage).map(Options(_, url, json))
+  def parse(args: List[String]): Either[String, CliOptions] =
+    def loop(rest: List[String], agent: Option[String], url: String, json: Boolean): Either[String, CliOptions] = rest match
+      case Nil                                 => agent.toRight(usage).map(CliOptions(_, url, json))
       case "connect" :: tail                   => loop(tail, agent, url, json) // cho giống `mahilo connect`
       case ("--agent-name" | "-a") :: v :: tail => loop(tail, Some(v), url, json)
       case "--url" :: v :: tail                 => loop(tail, agent, v, json)
@@ -38,33 +36,15 @@ object MahiloCli:
   val usage = "Cách dùng: cli/run [connect] --agent-name <agent> [--url http://localhost:8000] [--json]"
 
   /** "http://host:8000" → "ws://host:8000/ws/agent". */
-  def wsUri(o: Options): URI =
+  def wsUri(o: CliOptions): URI =
     val hostPort = o.url.split("://").last.stripSuffix("/")
     val scheme   = if o.url.startsWith("https") then "wss" else "ws"
     URI.create(s"$scheme://$hostPort/ws/${o.agent}")
 
-  /** Nhận tin; WebSocket có thể chia một tin thành nhiều mảnh (`last = false`). */
-  final class Printer(agent: String, onMessage: String => Unit, closed: CountDownLatch) extends WebSocket.Listener:
-    private val buffer = StringBuilder()
-    override def onText(ws: WebSocket, data: CharSequence, last: Boolean): CompletionStage[?] =
-      buffer.append(data)
-      if last then
-        onMessage(buffer.toString)
-        buffer.clear()
-      ws.request(1)
-      null
-    override def onClose(ws: WebSocket, code: Int, reason: String): CompletionStage[?] =
-      println(s"\n⚠️  Kết nối tới $agent đã đóng ($code $reason)")
-      closed.countDown()
-      null
-    override def onError(ws: WebSocket, error: Throwable): Unit =
-      println(s"\n⚠️  Lỗi kết nối: ${error.getMessage}")
-      closed.countDown()
+  def connect(o: CliOptions, onMessage: String => Unit, closed: CountDownLatch): WebSocket =
+    HttpClient.newHttpClient().newWebSocketBuilder().buildAsync(wsUri(o), CliPrinter(o.agent, onMessage, closed)).join()
 
-  def connect(o: Options, onMessage: String => Unit, closed: CountDownLatch): WebSocket =
-    HttpClient.newHttpClient().newWebSocketBuilder().buildAsync(wsUri(o), Printer(o.agent, onMessage, closed)).join()
-
-  def encode(o: Options, text: String): String =
+  def encode(o: CliOptions, text: String): String =
     if !o.json then text
     else "\"" + text.flatMap {
       case '"'            => "\\\""

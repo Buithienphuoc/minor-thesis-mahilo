@@ -3,7 +3,7 @@ package mahilo.bootstrap
 import cats.effect.{IO, Ref}
 import munit.CatsEffectSuite
 import mahilo.adapters.langchain4j.{ChatModelFromLlmClient, LangGraph4jEngine}
-import mahilo.adapters.local.ScriptedLlmClient
+import mahilo.adapters.local.{Script, ScriptedLlmClient}
 import mahilo.application.port.in.ChatOutcome
 import mahilo.application.port.out.{LlmReply, MessageQuery}
 import mahilo.application.service.AgentDefinition
@@ -71,7 +71,7 @@ class ConversationFlowSpec extends CatsEffectSuite:
       if req.messages.lastOption.exists(_.isInstanceOf[ChatMessage.Tool]) then
         val ChatMessage.Tool(_, _, out) = req.messages.last: @unchecked
         IO.pure(LlmReply(Some(out))) // trả nguyên kết quả tool ra để test kiểm tra
-      else ScriptedLlmClient.Script.call("chat_with_agent", "agent_name" -> "plumber", "question" -> "hi")
+      else Script.call("chat_with_agent", "agent_name" -> "plumber", "question" -> "hi")
     }
     system(llm = brain).use { sys =>
       for
@@ -98,7 +98,7 @@ class ConversationFlowSpec extends CatsEffectSuite:
     val brain = ScriptedLlmClient { req =>
       req.messages.lastOption match
         case Some(ChatMessage.Tool(_, _, out)) => IO.pure(LlmReply(Some(out)))
-        case _ => ScriptedLlmClient.Script.call("chat_with_agent", "agent_name" -> "plumber", "question" -> "COME NOW PLEASE")
+        case _ => Script.call("chat_with_agent", "agent_name" -> "plumber", "question" -> "COME NOW PLEASE")
     }
     system(llm = brain).use { sys =>
       sys.mahilo.admin.addPolicy(noShouting) *> sys.mahilo.chat.chat(dispatcher, "x").map {
@@ -110,7 +110,7 @@ class ConversationFlowSpec extends CatsEffectSuite:
 
   test("xử lý hộp thư lỗi: thử lại 3 lần, rồi Failed và gửi tin ERROR về người gửi") {
     val brain = ScriptedLlmClient { req =>
-      if ScriptedLlmClient.Script.agentName(req).contains("plumber") then IO.raiseError(RuntimeException("LLM down"))
+      if Script.agentName(req).contains("plumber") then IO.raiseError(RuntimeException("LLM down"))
       else DemoBrain.reply(req)
     }
     system(llm = brain).use { sys =>
@@ -138,7 +138,7 @@ class ConversationFlowSpec extends CatsEffectSuite:
   test("tool lỗi vẫn có tool result; tool không tồn tại không làm sập lượt; giới hạn số vòng") {
     val calls = Ref.unsafe[IO, Int](0)
     val brain = ScriptedLlmClient { _ =>
-      calls.update(_ + 1) *> ScriptedLlmClient.Script.call("does_not_exist", "x" -> "1") // luôn đòi gọi tool
+      calls.update(_ + 1) *> Script.call("does_not_exist", "x" -> "1") // luôn đòi gọi tool
     }
     system(llm = brain).use { sys =>
       for
@@ -159,7 +159,7 @@ class ConversationFlowSpec extends CatsEffectSuite:
     val brain = ScriptedLlmClient { req =>
       req.messages.lastOption match
         case Some(ChatMessage.Tool(_, _, out)) => IO.pure(LlmReply(Some(out)))
-        case _ => ScriptedLlmClient.Script.call("chat_with_agent", "agent_name" -> "dispatcher", "question" -> "hello me")
+        case _ => Script.call("chat_with_agent", "agent_name" -> "dispatcher", "question" -> "hello me")
     }
     system(llm = brain).use { sys =>
       sys.mahilo.chat.chat(dispatcher, "x").map {

@@ -9,15 +9,6 @@ import mahilo.application.service.AgentDefinition
 import mahilo.bootstrap.templates.CentralizedTemplates
 import mahilo.domain.AgentName
 
-/** Dựng một hệ Mahilo hoàn toàn trong RAM cho test. */
-final case class TestSystem(
-    mahilo: Mahilo,
-    store: InMemoryMessageStore,
-    human: LocalHumanGateway,
-    telemetry: InMemoryTelemetry,
-    sessions: InMemorySessionRepository
-)
-
 object TestKit:
   val dispatcher: AgentName = CentralizedTemplates.dispatcher.name
   val plumber: AgentName    = CentralizedTemplates.plumber.name

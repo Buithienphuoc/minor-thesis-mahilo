@@ -1,7 +1,7 @@
 package mahilo.bootstrap
 
 import cats.effect.IO
-import mahilo.adapters.local.ScriptedLlmClient.Script.*
+import mahilo.adapters.local.Script.*
 import mahilo.application.port.out.{LlmReply, LlmRequest}
 import mahilo.domain.conversation.ChatMessage
 
@@ -24,9 +24,7 @@ object TeamBrain:
 
   private val Pending = "Pending messages: "
 
-  final case class Turn(agent: String, fromQueue: Boolean, sender: String, payload: String, human: String, lastTool: Option[(String, String)])
-
-  def turn(req: LlmRequest): Turn =
+  def turn(req: LlmRequest): TeamTurn =
     val text = lastUserText(req)
     val q    = text.startsWith(Pending)
     val (sender, payload) =
@@ -35,7 +33,7 @@ object TeamBrain:
         case other       => ("", other.mkString)
       else ("", "")
     val lastTool = last(req).collect { case ChatMessage.Tool(_, name, content) => name -> content }
-    Turn(agentName(req).getOrElse(""), q, sender, payload, text.split("User: ").last, lastTool)
+    TeamTurn(agentName(req).getOrElse(""), q, sender, payload, text.split("User: ").last, lastTool)
 
   def handles(agent: Option[String]): Boolean =
     agent.exists(Set("SalesAgent", "MarketingAgent", "ProductAgent"))

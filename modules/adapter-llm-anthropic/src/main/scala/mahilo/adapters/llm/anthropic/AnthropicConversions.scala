@@ -23,18 +23,10 @@ object AnthropicConversions:
 
   private val mapper = ObjectMappers.jsonMapper()
 
-  /** Cấu hình gửi kèm mỗi request (đọc từ biến môi trường ở `ServerMain`). */
-  final case class Settings(
-      model: String = "claude-opus-5-5",
-      maxTokens: Long = 16000L,
-      effort: Option[String] = None, // low | medium | high | xhigh | max; None = mặc định của model
-      fallbacks: Boolean = true      // khi Claude từ chối vì bộ lọc an toàn, server tự thử model dự phòng
-  )
-
   /** Beta header: `fallbacks` (dự phòng khi bị từ chối) và `block_binding` (xem `params`). */
   val Betas: List[String] = List("server-side-fallback-2026-07-01", "thinking-binding-controls-2026-08-01")
 
-  def params(req: LlmRequest, s: Settings, cached: String => Option[MessageParam]): MessageCreateParams =
+  def params(req: LlmRequest, s: AnthropicSettings, cached: String => Option[MessageParam]): MessageCreateParams =
     val b = MessageCreateParams.builder()
       .model(req.model.getOrElse(s.model))
       .maxTokens(s.maxTokens)

@@ -4,7 +4,7 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import dev.langchain4j.model.chat.ChatModel
 import mahilo.adapters.http.{HttpServer, WebSocketHumanGateway}
 import mahilo.adapters.langchain4j.{ChatModelFromLlmClient, LangChain4jLlmClient, LangChain4jModels, LangGraph4jEngine}
-import mahilo.adapters.llm.anthropic.{AnthropicConversions, AnthropicLlmClient}
+import mahilo.adapters.llm.anthropic.{AnthropicLlmClient, AnthropicSettings}
 import mahilo.adapters.llm.openai.OpenAiCompatibleLlmClient
 import mahilo.adapters.local.{HmacEnvelopeSigner, InMemoryTelemetry}
 import mahilo.adapters.persistence.sqlite.{SqliteMessageStore, SqliteSessionRepository}
@@ -50,9 +50,6 @@ object ServerMain extends IOApp:
   def run(args: List[String]): IO[ExitCode] =
     app.use(_ => IO.println("Mahilo-Scala đang chạy. Ctrl+C để dừng.") *> IO.never).as(ExitCode.Success)
 
-  /** Một "ví dụ" = bộ agent + agent nào bật sẵn. */
-  private final case class Example(agents: List[AgentDefinition], startActive: List[AgentName])
-
   private def app: Resource[IO, Unit] =
     val example  = env("MAHILO_EXAMPLE").getOrElse("dispatcher")
     val provider = env("MAHILO_LLM").getOrElse("openai")
@@ -71,7 +68,7 @@ object ServerMain extends IOApp:
       case "scripted"    => Resource.pure(DemoBrain.llm)
       case "anthropic" =>
         val key = IO.fromOption(env("ANTHROPIC_API_KEY"))(IllegalStateException("Thiếu ANTHROPIC_API_KEY (đặt trong biến môi trường hoặc file .env)"))
-        val settings = AnthropicConversions.Settings(
+        val settings = AnthropicSettings(
           model = model,
           effort = env("MAHILO_LLM_EFFORT"),
           fallbacks = !env("MAHILO_LLM_FALLBACKS").contains("false")
