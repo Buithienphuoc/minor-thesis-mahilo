@@ -1,4 +1,4 @@
-# Mở CLI nối vào một agent trên Windows (PowerShell), giống `mahilo connect --agent-name X` của bản Python.
+﻿# Mở CLI nối vào một agent trên Windows (PowerShell), giống `mahilo connect --agent-name X` của bản Python.
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\mahilo-connect.ps1 --agent-name SalesAgent [--url http://localhost:8000] [--json]
 #
