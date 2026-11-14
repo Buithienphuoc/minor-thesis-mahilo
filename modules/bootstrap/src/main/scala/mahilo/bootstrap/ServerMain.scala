@@ -124,6 +124,11 @@ object ServerMain extends IOApp:
       case other =>
         Resource.eval(IO.raiseError(IllegalArgumentException(s"MAHILO_EXAMPLE không hợp lệ: '$other' (dùng dispatcher | team)")))
 
+    val cliHint =
+      if sys.props.getOrElse("os.name", "").toLowerCase.contains("win") then
+        "powershell -ExecutionPolicy Bypass -File scripts\\mahilo-connect.ps1 --agent-name <agent>"
+      else "scripts/mahilo-connect.sh --agent-name <agent>"
+
     val signer: EnvelopeSigner = env("MAHILO_SECRET_KEY").fold(EnvelopeSigner.Disabled)(HmacEnvelopeSigner(_))
 
     for
@@ -143,6 +148,6 @@ object ServerMain extends IOApp:
       server    <- HttpServer.resource(mahilo, gateway, "0.0.0.0", port, extraRoutes = RemoteEngineRoutes(registry).routes)
       _         <- Resource.eval(IO.println(
                      s"Ví dụ: $example  •  LLM: $provider${if scripted then "" else s" ($model)"}  •  agent: ${ex.agents.map(_.spec.name.value).mkString(", ")}  •  active: ${ex.startActive.map(_.value).mkString(", ")}\n" +
-                       s"HTTP: ${server.baseUri}  •  WebSocket: ws://localhost:$port/ws/<agent>  •  CLI: scripts/mahilo-connect.sh --agent-name <agent>"
+                       s"HTTP: ${server.baseUri}  •  WebSocket: ws://localhost:$port/ws/<agent>  •  CLI: $cliHint"
                    ))
     yield ()

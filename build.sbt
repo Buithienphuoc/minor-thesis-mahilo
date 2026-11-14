@@ -29,6 +29,19 @@ val V = new {
   val anthropic       = "3.3.0"  // SDK Java chính thức của Anthropic (Claude)
 }
 
+// Tuỳ chọn JVM cho chương trình chạy bằng `sbt run` (server, demo, CLI).
+//  - UTF-8 cho tiếng Việt.
+//  - Tắt cảnh báo nhầm của cats-effect "IOApp main is running on a thread other than the main thread"
+//    (thấy trên JDK 25 khi chạy qua sbt; chương trình vẫn đúng vì `run` đã fork).
+//  - JDK 17+: cho phép sqlite-jdbc nạp thư viện native mà không in cảnh báo.
+//  - JDK 23+: cho phép Scala 3.3 dùng sun.misc.Unsafe (lazy val) mà không in cảnh báo.
+lazy val javaMajor: Int = sys.props("java.specification.version").split('.').last.toInt
+lazy val runJvmOptions: Seq[String] =
+  Seq("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8", "-Dstdin.encoding=UTF-8",
+      "-Dcats.effect.warnOnNonMainThreadDetected=false") ++
+    (if (javaMajor >= 17) Seq("--enable-native-access=ALL-UNNAMED") else Nil) ++
+    (if (javaMajor >= 23) Seq("--sun-misc-unsafe-memory-access=allow") else Nil)
+
 lazy val testDeps = Seq(
   "org.scalameta" %% "munit"             % V.munit           % Test,
   "org.typelevel" %% "munit-cats-effect" % V.munitCatsEffect % Test
@@ -141,7 +154,10 @@ lazy val bootstrap = (project in file("modules/bootstrap"))
     ) ++ testDeps,
     run / fork := true,
     run / connectInput := true,
-    run / javaOptions ++= Seq("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"),
+    // In thẳng ra terminal: sbt không đọc lại output (đọc lại thì trên Windows hỏng font tiếng Việt
+    // và mọi dòng stderr bị gắn nhãn [error]).
+    run / outputStrategy := Some(StdoutOutput),
+    run / javaOptions ++= runJvmOptions,
     // Chạy từ thư mục gốc repo, để `.env` và `mahilo.db` nằm ở đó (mặc định sbt chạy trong modules/bootstrap).
     run / baseDirectory := (ThisBuild / baseDirectory).value,
     Compile / mainClass := Some("mahilo.bootstrap.DemoMain")
@@ -156,6 +172,6 @@ lazy val cli = (project in file("modules/cli"))
     run / fork := true,
     run / connectInput := true,
     run / outputStrategy := Some(StdoutOutput),
-    run / javaOptions ++= Seq("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8", "-Dstdin.encoding=UTF-8"),
+    run / javaOptions ++= runJvmOptions,
     Compile / mainClass := Some("mahilo.cli.MahiloCli")
   )
