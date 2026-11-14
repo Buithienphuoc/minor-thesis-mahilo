@@ -11,7 +11,7 @@ Dự án này độc lập hoàn toàn với Health Care demo, không dùng chun
 Cần JDK 17+ và [sbt](https://www.scala-sbt.org/download).
 
 ```bash
-sbt test                                                        # 30 test (thêm 4 test pytest ở engines/pydanticai-engine)
+sbt test                                                        # 34 test (thêm 4 test pytest ở engines/pydanticai-engine)
 sbt "bootstrap/runMain mahilo.bootstrap.DemoMain"               # kịch bản Dispatcher ↔ Plumber trong terminal
 sbt "bootstrap/runMain mahilo.bootstrap.DemoMain --langgraph4j" # như trên, nhưng plumber chạy bằng LangGraph4j
 ```
@@ -43,7 +43,9 @@ scripts/mahilo-connect.sh --agent-name MarketingAgent
 
 REST cũng dùng được: `curl -X POST localhost:8000/chat/dispatcher -d 'Toilet nhà tôi bị tắc'`, `curl localhost:8000/messages`.
 
-Biến môi trường (xem `ServerMain.scala` hoặc [mục 4 của user guide](docs/user-guide.md#4-dùng-llm-thật)): `MAHILO_EXAMPLE` = `dispatcher` | `team`; `MAHILO_LLM` = `openai` | `langchain4j` | `scripted`; `MAHILO_ENGINE` = `native` | `langgraph4j`; `MAHILO_LLM_MODEL`, `MAHILO_LLM_BASE_URL` (Ollama, vLLM... đều được), `MAHILO_DB`, `MAHILO_SECRET_KEY`, `MAHILO_POLICIES=anti_loop,message_length`, `PORT`, `MAHILO_PYDANTICAI_URL`, `MAHILO_PYDANTICAI_AGENTS`.
+Biến môi trường (xem `ServerMain.scala` hoặc [mục 4 của user guide](docs/user-guide.md#4-dùng-llm-thật)): `MAHILO_EXAMPLE` = `dispatcher` | `team`; `MAHILO_LLM` = `anthropic` (Claude) | `openai` | `langchain4j` | `scripted`; `MAHILO_ENGINE` = `native` | `langgraph4j`; `MAHILO_LLM_MODEL`, `MAHILO_LLM_BASE_URL` (Ollama, vLLM... đều được), `MAHILO_DB`, `MAHILO_SECRET_KEY`, `MAHILO_POLICIES=anti_loop,message_length`, `PORT`, `MAHILO_PYDANTICAI_URL`, `MAHILO_PYDANTICAI_AGENTS`. Có thể ghi tất cả vào file `.env` (mẫu: [`.env.example`](.env.example)).
+
+Dùng **Claude**: `cp .env.example .env`, điền `ANTHROPIC_API_KEY`, rồi chạy `sbt "bootstrap/runMain mahilo.bootstrap.ServerMain"`. Chạy trên Windows: xem [user guide, mục 0b](docs/user-guide.md#0b-chạy-trên-windows-powershell).
 
 ## Kiến trúc
 
@@ -56,7 +58,7 @@ Cách đọc sơ đồ (mũi tên là chiều gọi):
   `application/port`.
 - **Port vào (bên trái, `port/in`)**: `ChatUseCase`, `InboxUseCase`, `AdminUseCase`, `ObservationQuery`. `adapter-http`
   (REST + WebSocket), `DemoMain` và test gọi vào lõi qua các port này; `DeliveryWorker` gọi `InboxUseCase` khi có tin mới.
-- **Port ra (bên phải, `port/out`)**: mỗi port có thể có nhiều adapter. Ví dụ `LlmClient` có OpenAI, LangChain4j và bản giả
+- **Port ra (bên phải, `port/out`)**: mỗi port có thể có nhiều adapter. Ví dụ `LlmClient` có Claude, OpenAI, LangChain4j và bản giả
   lập; `AgentEngine` có vòng lặp gốc `ToolLoopEngine`, `LangGraph4jEngine` và `RemoteAgentEngine` (gọi service Python
   PydanticAI, service này gọi ngược tool qua `RemoteEngineRoutes`).
 - **`bootstrap`** là composition root, nơi duy nhất biết mọi adapter. Đổi SQLite sang in-memory, hay OpenAI sang
@@ -72,6 +74,7 @@ Quy tắc phụ thuộc, được sbt kiểm tra (module không khai báo `depen
 | `application` | domain | cats-effect |
 | `adapter-local` | application | không |
 | `adapter-llm-openai` | application | circe (HTTP dùng JDK) |
+| `adapter-llm-anthropic` | application | SDK Java chính thức của Anthropic (`com.anthropic:anthropic-java`) |
 | `adapter-persistence-sqlite` | application | sqlite-jdbc, circe |
 | `adapter-http` | application | http4s (Ember), circe |
 | `adapter-langchain4j` | application | **LangChain4j 1.22.0, LangGraph4j 1.9.5** |
@@ -106,7 +109,7 @@ Không adapter nào biết adapter khác. Đổi SQLite sang Postgres, hay OpenA
 | `message_store.py` | port `MessageStore` + `SqliteMessageStore`, `InMemoryMessageStore` | Thứ tự trả về ghi rõ trong port |
 | `policy.py` | `domain/policy/*` (luật thuần) + `PolicyEngine` (gọi LLM) | |
 | `session.py` | `domain/conversation/Session` + port `SessionRepository` | |
-| `llm_config.py` (LiteLLM) | port `LlmClient` + `OpenAiCompatibleLlmClient` / `LangChain4jLlmClient` | |
+| `llm_config.py` (LiteLLM) | port `LlmClient` + `OpenAiCompatibleLlmClient` / `LangChain4jLlmClient` / `AnthropicLlmClient` | Claude dùng SDK Java chính thức của Anthropic (module `adapter-llm-anthropic`) |
 | `integrations/langgraph/*` | port `AgentEngine` + `LangGraph4jEngine` | Xem mục dưới |
 | `integrations/pydanticai/*` | port `AgentEngine` + `RemoteAgentEngine` → service Python `engines/pydanticai-engine` | Xem mục PydanticAI |
 | `server.py` | `adapter-http` (`MahiloRoutes`, `WebSocketHumanGateway`) + `DeliveryWorker` | |
@@ -155,7 +158,7 @@ Mahilo-Scala ── POST /v1/turns ───────────────
 9. Session lưu theo `name` của agent, và mỗi agent có `Mutex` nên chat trực tiếp và hộp thư không chạy chồng nhau.
 10. Hàng đợi event-driven (`Queue` của cats-effect) thay cho poll SQLite mỗi giây; khởi động lại thì tự đánh thức agent còn tin pending.
 11. Prompt và bộ tool thống nhất: chat trực tiếp trả lời thẳng người dùng, `contact_human` chỉ dùng khi xử lý hộp thư.
-12. Có test cho lõi (30 test), log lỗi qua `Console` thay cho `print`.
+12. Có test cho lõi (34 test), log lỗi qua `Console` thay cho `print`.
 13. Tin sai chữ ký bị đánh dấu `failed` (Python để `pending` mãi và quét lại mỗi giây).
 
 ## Chưa port

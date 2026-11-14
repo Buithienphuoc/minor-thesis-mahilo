@@ -10,3 +10,8 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
+
+# Bí mật cục bộ (API key): KHÔNG commit. Mẫu ở .env.example
+.env
+.env.*
+!.env.example

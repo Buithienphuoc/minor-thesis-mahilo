@@ -4,11 +4,11 @@ Tài liệu này đi từng bước cho từng tình huống sử dụng. Mọi 
 
 | # | Tình huống | Cần API key? |
 |---|-----------|:---:|
-| 0 | [Cài đặt](#0-cài-đặt) | |
+| 0 | [Cài đặt](#0-cài-đặt) (có [hướng dẫn riêng cho Windows](#0b-chạy-trên-windows-powershell)) | |
 | 1 | [Demo nhanh trong 1 terminal](#1-demo-nhanh-trong-1-terminal) | Không |
 | 2 | [Ví dụ Dispatcher ↔ Plumber: server + client cho từng agent](#2-ví-dụ-dispatcher--plumber-server--client-cho-từng-agent) | Không |
 | 3 | [Ví dụ Team of Agents: 3 agent, 3 engine (native, LangGraph4j, PydanticAI)](#3-ví-dụ-team-of-agents-3-agent-3-engine) | Không |
-| 4 | [Dùng LLM thật: OpenAI, Ollama, LangChain4j](#4-dùng-llm-thật) | Có (trừ Ollama) |
+| 4 | [Dùng LLM thật: Claude, OpenAI, Ollama, LangChain4j](#4-dùng-llm-thật) | Có (trừ Ollama) |
 | 5 | [Gọi bằng REST thay cho CLI](#5-gọi-bằng-rest-thay-cho-cli) | |
 | 6 | [Quan sát hệ thống: tin nhắn, hội thoại, metrics](#6-quan-sát-hệ-thống) | |
 | 7 | [Policy: bật, tắt, tự viết](#7-policy) | |
@@ -22,7 +22,7 @@ Bản đồ nhanh:
 
 ```
                   ┌──────────── Mahilo-Scala server (cổng 8000) ────────────┐
-CLI / WebSocket ─►│  /ws/<agent>      ChatUseCase ─► AgentRuntime ─► engine │──► LLM (OpenAI, Ollama, giả lập)
+CLI / WebSocket ─►│  /ws/<agent>      ChatUseCase ─► AgentRuntime ─► engine │──► LLM (Claude, OpenAI, Ollama, giả lập)
 curl / REST ─────►│  /chat/<agent>    MessageBroker ─► hàng đợi ─► agent    │
                   │  /messages, /metrics, /policies ...                     │◄─► pydanticai-engine (Python, cổng 8001)
                   └──────────────────────────────────────────────────────────┘
@@ -32,7 +32,7 @@ curl / REST ─────►│  /chat/<agent>    MessageBroker ─► hàng �
 
 ## 0. Cài đặt
 
-1. Cài **JDK 17+** (`java -version`) và **sbt** 1.10+ (https://www.scala-sbt.org/download).
+1. Cài **JDK 21** (`java -version`; JDK 17+ đều chạy, nhưng JDK 24+ in thêm cảnh báo `sun.misc.Unsafe`, xem mục 0b) và **sbt** 1.10+ (https://www.scala-sbt.org/download).
 2. (Chỉ cần cho tình huống 3 và 9 với PydanticAI) Cài **Python 3.11+**.
 3. Clone và build:
 
@@ -50,11 +50,60 @@ curl / REST ─────►│  /chat/<agent>    MessageBroker ─► hàng �
    cd engines/pydanticai-engine
    python3 -m venv .venv
    . .venv/bin/activate          # Windows: .venv\Scripts\activate
-   pip install -e ".[dev]"        # thêm ",openai" nếu muốn dùng model OpenAI thật
+   pip install -e ".[dev]"        # thêm ",anthropic" (Claude) hoặc ",openai" nếu muốn dùng model thật
    cd ../..
    ```
 
 > Nếu Maven Central trả lỗi 429 (bị giới hạn tốc độ), xem [mục 12](#12-xử-lý-sự-cố).
+
+5. (Tuỳ chọn) Tạo file cấu hình `.env` từ file mẫu, rồi điền API key:
+
+   ```bash
+   cp .env.example .env          # Windows: copy .env.example .env
+   ```
+
+   Server đọc `.env` ở thư mục gốc repo khi khởi động; biến môi trường thật được ưu tiên hơn. `.env` đã nằm trong `.gitignore` nên key không bị commit.
+
+### 0b. Chạy trên Windows (PowerShell)
+
+Các lệnh trong guide viết theo bash. Trên Windows dùng PowerShell như sau:
+
+1. **Dùng JDK 21 (LTS).** Với JDK 24/25 bạn sẽ thấy các dòng `[error] WARNING: A terminally deprecated method in sun.misc.Unsafe has been called ...`. Đó **không phải lỗi**: Scala 3.3 dùng `sun.misc.Unsafe` cho `lazy val`, JDK mới cảnh báo việc này, và sbt gắn nhãn `[error]` cho mọi dòng stderr của tiến trình con. Chương trình vẫn chạy đúng. JDK 21 không in các dòng này.
+2. **Cho terminal hiển thị tiếng Việt** (nếu không sẽ thấy `M├¼nh ─æ├ú...`):
+
+   ```powershell
+   chcp 65001
+   [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+   ```
+
+   Hoặc dùng Windows Terminal (mặc định UTF-8). Script `scripts\mahilo-connect.ps1` tự làm bước này.
+3. **Đặt biến môi trường** theo cú pháp PowerShell (hoặc ghi vào `.env`, gọn hơn):
+
+   ```powershell
+   $env:MAHILO_LLM = "scripted"
+   sbt "bootstrap/runMain mahilo.bootstrap.ServerMain"
+   ```
+
+   Lệnh bash `MAHILO_LLM=scripted sbt ...` tương đương với hai dòng trên. Biến đặt bằng `$env:` chỉ sống trong cửa sổ PowerShell đó.
+4. **Mở client cho từng agent:**
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\mahilo-connect.ps1 --agent-name dispatcher
+   ```
+
+   Hoặc dùng Git Bash và chạy `scripts/mahilo-connect.sh` như trên Linux.
+5. **Service Python (ví dụ team):**
+
+   ```powershell
+   cd engines\pydanticai-engine
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   pip install -e ".[dev,anthropic]"
+   $env:PYDANTICAI_MODEL = "demo"      # hoặc "anthropic:claude-opus-5-5" (cần $env:ANTHROPIC_API_KEY)
+   uvicorn mahilo_pydanticai.app:app --port 8001
+   ```
+
+Nếu bạn đang chạy bản `mahilo-scala-src.zip` cũ thì nên clone repo về (bước 3 ở trên): bản zip chưa có ví dụ team, CLI và Claude.
 
 ---
 
@@ -232,7 +281,22 @@ Bạn sẽ thấy 4 tin, tất cả `processed`: Sales→Product, Product→Sale
 
 ## 4. Dùng LLM thật
 
-Cả hai ví dụ đều chạy được với LLM thật. Chỉ cần đổi biến môi trường của server, không phải sửa code:
+Cả hai ví dụ đều chạy được với LLM thật. Chỉ cần đổi biến môi trường (hoặc file `.env`) của server, không phải sửa code.
+
+**Claude** (adapter `AnthropicLlmClient`, module `adapter-llm-anthropic`, dùng SDK Java chính thức của Anthropic):
+
+```bash
+# trong .env:  MAHILO_LLM=anthropic  và  ANTHROPIC_API_KEY=sk-ant-...
+sbt "bootstrap/runMain mahilo.bootstrap.ServerMain"
+```
+
+Dòng khởi động sẽ in `LLM: anthropic (claude-opus-5-5)`. Mặc định là Claude Opus 5.5. Đổi `MAHILO_LLM_MODEL=claude-sonnet-5-5` hoặc `claude-haiku-5-5` nếu muốn rẻ và nhanh hơn. Một số điểm adapter tự lo cho bạn:
+- Claude luôn "suy nghĩ" (adaptive thinking). Trong vòng lặp tool, block `thinking` được gửi lại nguyên văn để Claude không mất mạch suy luận. Domain không cần biết đến nó.
+- `MAHILO_LLM_EFFORT` = `low` | `medium` | `high` | `xhigh` | `max` chỉnh độ kỹ khi suy nghĩ (bỏ trống thì Opus 5.5 dùng `medium`). Agent đơn giản dùng `low` cho nhanh, việc khó dùng `high`.
+- Khi Claude từ chối một yêu cầu vì bộ lọc an toàn, server Anthropic tự thử lại bằng model dự phòng (`MAHILO_LLM_FALLBACKS=true`, mặc định). Nếu vẫn bị từ chối, agent nhận câu "Xin lỗi, Claude đã từ chối yêu cầu này" thay vì lỗi.
+- Không gửi `temperature` (các model Claude hiện tại không nhận tham số này).
+
+Với ví dụ team, MarketingAgent (LangGraph4j) tự dùng Claude qua `ChatModelFromLlmClient`. ProductAgent (PydanticAI) thì chạy service Python với `PYDANTICAI_MODEL=anthropic:claude-opus-5-5` và `ANTHROPIC_API_KEY` (cài thêm `pip install -e ".[anthropic]"`).
 
 **OpenAI** (adapter `OpenAiCompatibleLlmClient`, gọi thẳng REST):
 
@@ -257,17 +321,20 @@ MAHILO_LLM_BASE_URL=http://localhost:11434/v1 MAHILO_LLM_MODEL=llama3.1 OPENAI_A
 
 Model phải hỗ trợ tool calling.
 
-**Team of Agents với model thật**: thêm `MAHILO_EXAMPLE=team`. MarketingAgent (LangGraph4j) tự dùng cùng model qua LangChain4j. Với ProductAgent, chạy service Python với `PYDANTICAI_MODEL=openai:gpt-4o-mini` (cần `pip install -e ".[openai]"`).
+**Team of Agents với model thật**: thêm `MAHILO_EXAMPLE=team`. MarketingAgent (LangGraph4j) tự dùng cùng model (Claude qua `ChatModelFromLlmClient`, GPT qua LangChain4j). Với ProductAgent, chạy service Python với `PYDANTICAI_MODEL=openai:gpt-4o-mini` (cần `pip install -e ".[openai]"`).
 
 Tất cả biến môi trường của server:
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `MAHILO_EXAMPLE` | `dispatcher` | bộ agent: `dispatcher` hoặc `team` |
-| `MAHILO_LLM` | `openai` | `openai`, `langchain4j`, hoặc `scripted` (giả lập) |
+| `MAHILO_LLM` | `openai` | `anthropic` (Claude), `openai`, `langchain4j`, hoặc `scripted` (giả lập) |
 | `MAHILO_ENGINE` | `native` | engine mặc định của ví dụ dispatcher: `native` hoặc `langgraph4j` |
 | `OPENAI_API_KEY` | | key cho `openai`/`langchain4j` |
-| `MAHILO_LLM_MODEL` | `gpt-4o-mini` | tên model |
+| `ANTHROPIC_API_KEY` | | key cho `anthropic` |
+| `MAHILO_LLM_MODEL` | `claude-opus-5-5` / `gpt-4o-mini` | tên model |
+| `MAHILO_LLM_EFFORT` | (mặc định của model) | chỉ cho `anthropic`: `low` … `max` |
+| `MAHILO_LLM_FALLBACKS` | `true` | chỉ cho `anthropic`: tự thử model dự phòng khi bị từ chối |
 | `MAHILO_LLM_BASE_URL` | `https://api.openai.com/v1` | đổi để dùng Ollama, vLLM... |
 | `MAHILO_DB` | `mahilo.db` | file SQLite |
 | `MAHILO_SECRET_KEY` | | bật ký HMAC cho tin giữa các agent |
@@ -276,6 +343,7 @@ Tất cả biến môi trường của server:
 | `MAHILO_PYDANTICAI_URL` | | URL service PydanticAI, vd `http://localhost:8001` |
 | `MAHILO_PYDANTICAI_AGENTS` | `plumber` / `ProductAgent` | agent nào chạy bằng PydanticAI (phân tách bằng dấu phẩy) |
 | `MAHILO_PUBLIC_URL` | `http://localhost:PORT` | URL mà service PydanticAI dùng để gọi ngược về Mahilo |
+| `MAHILO_ENV_FILE` | `.env` | file cấu hình đọc khi khởi động (chỉ đặt bằng biến môi trường thật) |
 
 ---
 
@@ -502,13 +570,13 @@ sqlite3 mahilo.db 'select sender, recipient, state from messages;'
 ## 11. Chạy test
 
 ```bash
-sbt test                                    # 30 test Scala: domain, adapter, luồng hội thoại, HTTP/WS, engine REST, team_of_agents, CLI
+sbt test                                    # 34 test Scala: domain, adapter, luồng hội thoại, HTTP/WS, engine REST, team_of_agents, CLI, Claude
 sbt "bootstrap/testOnly *TeamOfAgentsSpec"  # chỉ một bộ test
 
 cd engines/pydanticai-engine && pytest      # 4 test Python của service PydanticAI
 ```
 
-Test chạy hoàn toàn offline. LLM được giả lập bằng `ScriptedLlmClient`, engine REST được giả lập bằng một server http4s nhỏ.
+Test chạy hoàn toàn offline. LLM được giả lập bằng `ScriptedLlmClient`, engine REST được giả lập bằng một server http4s nhỏ. `AnthropicSpec` cho adapter Claude nói chuyện với một Messages API giả để kiểm tra đúng định dạng gửi đi mà không cần key.
 
 ---
 
@@ -519,8 +587,12 @@ Test chạy hoàn toàn offline. LLM được giả lập bằng `ScriptedLlmCli
 | sbt báo `429 Too Many Requests` khi tải thư viện | Tạo `~/.sbt/repositories` với nội dung `[repositories]`, `local`, `google: https://maven-central.storage-download.googleapis.com/maven2/` (mỗi dòng một mục), rồi chạy sbt với `-Dsbt.override.build.repos=true` |
 | CLI báo `Không nối được tới ws://...` | Server chưa chạy, sai cổng (`--url`), hoặc sai tên agent (phân biệt hoa thường: `SalesAgent`) |
 | CLI nhận `Agent X is not active.` | `curl -X POST localhost:8000/agents/X/activate`, hoặc để agent khác nhắn cho X trước |
-| Chữ tiếng Việt hiện thành `?` | Terminal không ở UTF-8. Repo đã có `.jvmopts` đặt UTF-8 cho sbt; trên Windows chạy `chcp 65001` |
-| Server báo thiếu `OPENAI_API_KEY` | Đặt key, hoặc thêm `MAHILO_LLM=scripted` |
+| Chữ tiếng Việt hiện thành `?` hoặc `M├¼nh ─æ├ú` | Terminal không ở UTF-8. Repo đã có `.jvmopts` đặt UTF-8 cho sbt; trên Windows chạy `chcp 65001` (xem mục 0b) |
+| Server báo thiếu `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Đặt key trong `.env` hoặc biến môi trường, hoặc dùng `MAHILO_LLM=scripted` |
+| Claude trả `401 authentication_error` | Key sai hoặc đã bị thu hồi. Tạo key mới ở https://platform.claude.com/settings/keys |
+| Claude trả `429 rate_limit_error` | Vượt giới hạn tốc độ của tài khoản. SDK tự thử lại 2 lần; nếu vẫn lỗi thì đợi chút, hoặc dùng `MAHILO_LLM_EFFORT=low` / model nhỏ hơn |
+| `[error] WARNING: ... sun.misc.Unsafe ...` | Chỉ là cảnh báo của JDK 24+, không phải lỗi. Dùng JDK 21 để hết (xem mục 0b) |
+| `[WARNING] IOApp main is running on a thread other than the main thread` | Cảnh báo của cats-effect, chương trình vẫn chạy đúng. Thấy trên Windows + JDK 25; không xuất hiện với JDK 21 |
 | `⚠️ Chưa đặt MAHILO_PYDANTICAI_URL` | Bình thường nếu bạn không chạy service Python. ProductAgent dùng engine gốc |
 | ProductAgent không trả lời, log Scala có lỗi kết nối 8001 | Service PydanticAI chưa chạy. Kiểm tra bằng `curl localhost:8001/health` |
 | Port 8000 bị chiếm | `PORT=8080 ...` cho server và `--url http://localhost:8080` cho CLI |
