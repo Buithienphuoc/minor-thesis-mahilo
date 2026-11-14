@@ -12,6 +12,7 @@ dependencies = [
 
 [project.optional-dependencies]
 openai = ["pydantic-ai-slim[openai]==2.57.0"]
+anthropic = ["pydantic-ai-slim[anthropic]==2.57.0"]
 dev = ["pytest>=8"]
 
 [build-system]

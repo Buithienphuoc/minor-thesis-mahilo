@@ -18,7 +18,7 @@ from .mahilo_client import HttpToolCaller
 
 
 def _model_for(agent_name: str):
-    """``demo`` = model giả lập theo vai agent; còn lại là tên model PydanticAI, vd ``openai:gpt-4o-mini``."""
+    """``demo`` = model giả lập theo vai agent; còn lại là tên model PydanticAI, vd ``openai:gpt-4o-mini`` hoặc ``anthropic:claude-opus-5-5``."""
     name = os.getenv("PYDANTICAI_MODEL", "demo")
     return demo_model(agent_name) if name == "demo" else name
 

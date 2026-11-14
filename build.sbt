@@ -26,6 +26,7 @@ val V = new {
   val munitCatsEffect = "2.0.0"
   val langchain4j     = "1.22.0" // LangChain4j: abstraction ChatModel, Tool... trên JVM
   val langgraph4j     = "1.9.5"  // LangGraph4j: StateGraph trên JVM (dùng langchain4j 1.22.0)
+  val anthropic       = "3.3.0"  // SDK Java chính thức của Anthropic (Claude)
 }
 
 lazy val testDeps = Seq(
@@ -34,7 +35,7 @@ lazy val testDeps = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(domain, application, adapterLocal, adapterLlmOpenAi, adapterSqlite, adapterHttp, adapterLangChain4j, adapterRemoteEngine, bootstrap, cli)
+  .aggregate(domain, application, adapterLocal, adapterLlmOpenAi, adapterLlmAnthropic, adapterSqlite, adapterHttp, adapterLangChain4j, adapterRemoteEngine, bootstrap, cli)
   .settings(name := "mahilo-scala", publish / skip := true)
 
 // ---------- Lõi: domain thuần ----------
@@ -63,6 +64,14 @@ lazy val adapterLlmOpenAi = (project in file("modules/adapter-llm-openai"))
       "io.circe" %% "circe-core"   % V.circe,
       "io.circe" %% "circe-parser" % V.circe
     ) ++ testDeps
+  )
+
+// ---------- Adapter LLM: Claude qua SDK Java chính thức của Anthropic ----------
+lazy val adapterLlmAnthropic = (project in file("modules/adapter-llm-anthropic"))
+  .dependsOn(application)
+  .settings(
+    name := "mahilo-adapter-llm-anthropic",
+    libraryDependencies ++= Seq("com.anthropic" % "anthropic-java" % V.anthropic) ++ testDeps
   )
 
 // ---------- Adapter lưu trữ: SQLite qua JDBC ----------
@@ -123,7 +132,7 @@ lazy val adapterHttp = (project in file("modules/adapter-http"))
 
 // ---------- Composition root: lắp ráp + ví dụ + main ----------
 lazy val bootstrap = (project in file("modules/bootstrap"))
-  .dependsOn(adapterLocal, adapterLlmOpenAi, adapterSqlite, adapterHttp, adapterLangChain4j, adapterRemoteEngine)
+  .dependsOn(adapterLocal, adapterLlmOpenAi, adapterLlmAnthropic, adapterSqlite, adapterHttp, adapterLangChain4j, adapterRemoteEngine)
   .settings(
     name := "mahilo-bootstrap",
     libraryDependencies ++= Seq(
@@ -133,6 +142,8 @@ lazy val bootstrap = (project in file("modules/bootstrap"))
     run / fork := true,
     run / connectInput := true,
     run / javaOptions ++= Seq("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8"),
+    // Chạy từ thư mục gốc repo, để `.env` và `mahilo.db` nằm ở đó (mặc định sbt chạy trong modules/bootstrap).
+    run / baseDirectory := (ThisBuild / baseDirectory).value,
     Compile / mainClass := Some("mahilo.bootstrap.DemoMain")
   )
 

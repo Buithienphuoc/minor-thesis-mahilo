@@ -4,6 +4,7 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import dev.langchain4j.model.chat.ChatModel
 import mahilo.adapters.http.{HttpServer, WebSocketHumanGateway}
 import mahilo.adapters.langchain4j.{ChatModelFromLlmClient, LangChain4jLlmClient, LangChain4jModels, LangGraph4jEngine}
+import mahilo.adapters.llm.anthropic.{AnthropicConversions, AnthropicLlmClient}
 import mahilo.adapters.llm.openai.OpenAiCompatibleLlmClient
 import mahilo.adapters.local.{HmacEnvelopeSigner, InMemoryTelemetry}
 import mahilo.adapters.persistence.sqlite.{SqliteMessageStore, SqliteSessionRepository}
@@ -20,10 +21,13 @@ import mahilo.domain.AgentName
   * không đổi. Cấu hình bằng biến môi trường:
   *
   *   MAHILO_EXAMPLE      dispatcher (mặc định) | team   — chọn bộ agent (xem docs/user-guide.md)
-  *   MAHILO_LLM          openai (mặc định) | langchain4j | scripted (không cần key, "bộ não" giả lập)
+  *   MAHILO_LLM          openai (mặc định) | anthropic (Claude) | langchain4j | scripted (không cần key, "bộ não" giả lập)
   *   MAHILO_ENGINE       native (mặc định) | langgraph4j   — engine mặc định cho agent (ví dụ dispatcher)
   *   OPENAI_API_KEY      key cho openai/langchain4j
-  *   MAHILO_LLM_MODEL    mặc định gpt-4o-mini
+  *   ANTHROPIC_API_KEY   key cho anthropic
+  *   MAHILO_LLM_MODEL    mặc định gpt-4o-mini (openai) / claude-opus-5-5 (anthropic)
+  *   MAHILO_LLM_EFFORT   (anthropic) low | medium | high | xhigh | max; bỏ trống = mặc định của model
+  *   MAHILO_LLM_FALLBACKS (anthropic) true (mặc định) | false: tự chuyển model dự phòng khi Claude từ chối
   *   MAHILO_LLM_BASE_URL mặc định https://api.openai.com/v1 (đổi để dùng Ollama, vLLM...)
   *   MAHILO_DB           file SQLite, mặc định mahilo.db
   *   MAHILO_SECRET_KEY   bật ký HMAC cho phong bì
@@ -33,10 +37,15 @@ import mahilo.domain.AgentName
   *   MAHILO_PYDANTICAI_URL    bật engine PydanticAI (service Python), vd http://localhost:8001
   *   MAHILO_PYDANTICAI_AGENTS agent nào dùng engine đó; mặc định "plumber" (dispatcher) / "ProductAgent" (team)
   *   MAHILO_PUBLIC_URL        URL engine dùng để gọi ngược về Mahilo, mặc định http://localhost:PORT
+  *
+  * Các biến này cũng đọc được từ file `.env` ở thư mục chạy (xem `DotEnv` và `.env.example`).
   */
 object ServerMain extends IOApp:
 
-  private def env(name: String): Option[String] = sys.env.get(name).filter(_.nonEmpty)
+  private val dotEnv = DotEnv.load(sys.env.getOrElse("MAHILO_ENV_FILE", ".env"))
+
+  /** Biến môi trường thật được ưu tiên; không có thì lấy từ file `.env`. */
+  private def env(name: String): Option[String] = sys.env.get(name).filter(_.nonEmpty).orElse(dotEnv.get(name).filter(_.nonEmpty))
 
   def run(args: List[String]): IO[ExitCode] =
     app.use(_ => IO.println("Mahilo-Scala đang chạy. Ctrl+C để dừng.") *> IO.never).as(ExitCode.Success)
@@ -46,19 +55,28 @@ object ServerMain extends IOApp:
 
   private def app: Resource[IO, Unit] =
     val example  = env("MAHILO_EXAMPLE").getOrElse("dispatcher")
-    val model    = env("MAHILO_LLM_MODEL").getOrElse("gpt-4o-mini")
+    val provider = env("MAHILO_LLM").getOrElse("openai")
+    val model    = env("MAHILO_LLM_MODEL").getOrElse(if provider == "anthropic" then "claude-opus-5-5" else "gpt-4o-mini")
     val baseUrl  = env("MAHILO_LLM_BASE_URL")
     val apiKey   = env("OPENAI_API_KEY")
     val port     = env("PORT").flatMap(_.toIntOption).getOrElse(8000)
     val dbPath   = env("MAHILO_DB").getOrElse("mahilo.db")
-    val scripted = env("MAHILO_LLM").contains("scripted")
+    val scripted = provider == "scripted"
 
     def requireKey: IO[String] =
       IO.fromOption(apiKey)(IllegalStateException("Thiếu OPENAI_API_KEY (hoặc đặt MAHILO_LLM=scripted để chạy thử)"))
 
     // ---- Port LlmClient ----
-    val llm: Resource[IO, LlmClient] = env("MAHILO_LLM").getOrElse("openai") match
+    val llm: Resource[IO, LlmClient] = provider match
       case "scripted"    => Resource.pure(DemoBrain.llm)
+      case "anthropic" =>
+        val key = IO.fromOption(env("ANTHROPIC_API_KEY"))(IllegalStateException("Thiếu ANTHROPIC_API_KEY (đặt trong biến môi trường hoặc file .env)"))
+        val settings = AnthropicConversions.Settings(
+          model = model,
+          effort = env("MAHILO_LLM_EFFORT"),
+          fallbacks = !env("MAHILO_LLM_FALLBACKS").contains("false")
+        )
+        Resource.eval(key).flatMap(k => AnthropicLlmClient.resource(settings, Some(k), env("MAHILO_ANTHROPIC_BASE_URL")))
       case "langchain4j" => Resource.eval(requireKey).map(k => LangChain4jLlmClient(LangChain4jModels.openAi(k, model, baseUrl)))
       case _ =>
         Resource.eval(requireKey).map(k => OpenAiCompatibleLlmClient(k, model, baseUrl.getOrElse("https://api.openai.com/v1")))
@@ -66,7 +84,8 @@ object ServerMain extends IOApp:
     // ---- Engine LangGraph4j: cần một ChatModel của LangChain4j ----
     def langGraphEngine(llm: LlmClient): Resource[IO, AgentEngine] =
       val chatModel: Resource[IO, ChatModel] =
-        if scripted then ChatModelFromLlmClient.resource(llm)
+        // Claude và bộ não giả lập: bọc chính LlmClient thành ChatModel của LangChain4j.
+        if scripted || provider == "anthropic" then ChatModelFromLlmClient.resource(llm)
         else Resource.eval(requireKey).map(k => LangChain4jModels.openAi(k, model, baseUrl))
       chatModel.flatMap(LangGraph4jEngine.resource(_))
 
@@ -123,7 +142,7 @@ object ServerMain extends IOApp:
                    )
       server    <- HttpServer.resource(mahilo, gateway, "0.0.0.0", port, extraRoutes = RemoteEngineRoutes(registry).routes)
       _         <- Resource.eval(IO.println(
-                     s"Ví dụ: $example  •  agent: ${ex.agents.map(_.spec.name.value).mkString(", ")}  •  active: ${ex.startActive.map(_.value).mkString(", ")}\n" +
+                     s"Ví dụ: $example  •  LLM: $provider${if scripted then "" else s" ($model)"}  •  agent: ${ex.agents.map(_.spec.name.value).mkString(", ")}  •  active: ${ex.startActive.map(_.value).mkString(", ")}\n" +
                        s"HTTP: ${server.baseUri}  •  WebSocket: ws://localhost:$port/ws/<agent>  •  CLI: scripts/mahilo-connect.sh --agent-name <agent>"
                    ))
     yield ()
